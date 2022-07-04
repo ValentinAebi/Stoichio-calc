@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 use std::fmt;
 use std::fmt::Formatter;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 
-#[derive(PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[derive(PartialEq, Eq, Hash, Ord, PartialOrd, Debug)]
 pub struct Atom {
     pub code: String,
     pub name: String,
@@ -16,6 +16,7 @@ impl fmt::Display for Atom {
     }
 }
 
+#[derive(Debug)]
 pub struct Molecule {
     pub atoms: BTreeMap<Atom, u16>,
 }

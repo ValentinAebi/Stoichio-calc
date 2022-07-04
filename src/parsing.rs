@@ -1,55 +1,56 @@
-use std::collections::hash_set::Union;
-use std::collections::HashSet;
-use std::ops::Add;
-use std::ptr::null;
-use crate::Atom;
+
 use TokenType::{Alphabetic, ClosingParenthesis, Delimiter, NoType, Numeric, OpeningParenthesis, Whitespace};
+use crate::parsing::TokenType::Plus;
 
-const DELIMITER_CHARS: [char; 3] = ['=', '<', '>'];
+const ARROW_PARTS: [char; 4] = ['=', '-', '<', '>'];
 
-#[derive(Eq, PartialEq)]
-enum TokenType {
+#[derive(Eq, PartialEq, Debug)]
+pub enum TokenType {
     Alphabetic,
     Numeric,
     OpeningParenthesis,
     ClosingParenthesis,
+    Plus,
     Delimiter,
     Whitespace,
     NoType
 }
 
-pub struct Token(String, TokenType);
+#[derive(Eq, PartialEq, Debug)]
+pub struct Token(pub String, pub TokenType);
 
-fn token_type_for(c: &char) -> TokenType {
+/// returns (token_type, force_start)
+fn token_type_for(c: &char) -> (TokenType, bool) {
     match *c {
-        c if c.is_alphabetic() => Alphabetic,
-        c if c.is_numeric() => Numeric,
-        c if c == '(' => OpeningParenthesis,
-        c if c == ')' => ClosingParenthesis,
-        _ if DELIMITER_CHARS.contains(c) => Delimiter,
-        c if c.is_ascii_whitespace() => Whitespace,
-        _ => NoType
+        c if c.is_alphabetic() => (Alphabetic, c.is_uppercase()),
+        c if c.is_numeric() => (Numeric, false),
+        c if c == '(' => (OpeningParenthesis, true),
+        c if c == ')' => (ClosingParenthesis, true),
+        c if c == '+' => (Plus, true),
+        _ if ARROW_PARTS.contains(c) => (Delimiter, false),
+        c if c.is_ascii_whitespace() => (Whitespace, false),
+        _ => (NoType, false)
     }
 }
 
-pub fn tokenize(txt: String) -> Vec<Token> {
-
-    let formatted = txt.to_lowercase();
+pub fn tokenize(txt: &String) -> Vec<Token> {
 
     let mut acc_token_str = String::new();
     let mut acc_tok_type = NoType;
     let mut tokens: Vec<Token> = Vec::new();
 
-    for c in formatted.chars() {
-        let c_tok_type = token_type_for(&c);
-        if c_tok_type == acc_tok_type {
+    for c in txt.chars() {
+        let (c_tok_type, force_start) = token_type_for(&c);
+        if c_tok_type == acc_tok_type && !force_start {
             acc_token_str.push(c);
         }
         else {
-            tokens.push(Token(acc_token_str.clone(), acc_tok_type));
-            acc_tok_type = c_tok_type;
+            if acc_token_str.len() != 0 {
+                tokens.push(Token(acc_token_str.clone(), acc_tok_type));
+            }
             acc_token_str.clear();
             acc_token_str.push(c);
+            acc_tok_type = c_tok_type;
         }
     }
     tokens.push(Token(acc_token_str.clone(), acc_tok_type));

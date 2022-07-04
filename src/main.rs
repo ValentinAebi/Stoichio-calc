@@ -1,10 +1,5 @@
-use std::collections::{BTreeMap, HashMap};
-
-use crate::chemistry::{Atom, Molecule};
-
-mod chemistry;
-mod parsing;
-mod data_loading;
+use std::collections::BTreeMap;
+use Stoichio_calc::chemistry::{Atom, Molecule};
 
 fn main() {
     let hydrogen = Atom {

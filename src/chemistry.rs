@@ -3,7 +3,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::hash::Hash;
 
-#[derive(PartialEq, Eq, Hash, Ord, PartialOrd, Debug)]
+#[derive(PartialEq, Eq, Hash, Ord, PartialOrd, Debug, Clone)]
 pub struct Atom {
     pub code: String,
     pub name: String,
@@ -18,7 +18,7 @@ impl fmt::Display for Atom {
 
 #[derive(Debug)]
 pub struct Molecule {
-    pub atoms: BTreeMap<Atom, u16>,
+    pub atoms: BTreeMap<Atom, u32>,
 }
 
 impl fmt::Display for Molecule {
@@ -32,4 +32,10 @@ impl fmt::Display for Molecule {
         }
         Ok(())
     }
+}
+
+#[derive(Debug)]
+pub struct RawEquation {
+    pub lhs: Vec<(Atom, u32)>,
+    pub rhs: Vec<(Atom, u32)>
 }

@@ -1,5 +1,7 @@
-
+use std::collections::BTreeMap;
+use std::iter::Map;
 use TokenType::{Alphabetic, ClosingParenthesis, Delimiter, NoType, Numeric, OpeningParenthesis, Whitespace};
+use crate::chemistry::{Atom, Molecule, RawEquation};
 use crate::parsing::TokenType::Plus;
 
 const ARROW_PARTS: [char; 4] = ['=', '-', '<', '>'];
@@ -13,7 +15,7 @@ pub enum TokenType {
     Plus,
     Delimiter,
     Whitespace,
-    NoType
+    NoType,
 }
 
 #[derive(Eq, PartialEq, Debug)]
@@ -34,7 +36,6 @@ fn token_type_for(c: &char) -> (TokenType, bool) {
 }
 
 pub fn tokenize(txt: &String) -> Vec<Token> {
-
     let mut acc_token_str = String::new();
     let mut acc_tok_type = NoType;
     let mut tokens: Vec<Token> = Vec::new();
@@ -43,8 +44,7 @@ pub fn tokenize(txt: &String) -> Vec<Token> {
         let (c_tok_type, force_start) = token_type_for(&c);
         if c_tok_type == acc_tok_type && !force_start {
             acc_token_str.push(c);
-        }
-        else {
+        } else {
             if acc_token_str.len() != 0 {
                 tokens.push(Token(acc_token_str.clone(), acc_tok_type));
             }
@@ -57,4 +57,19 @@ pub fn tokenize(txt: &String) -> Vec<Token> {
     tokens
 }
 
+pub fn parse_atom(atoms: BTreeMap<String, Atom>, tokens: &mut Vec<Token>) -> Option<Atom> {
+    if let Some(Token(txt, TokenType::Alphabetic)) = tokens.get(0) {
+        if let Some(atom) = atoms.get(txt).cloned() {
+            tokens.remove(0);
+            Some(atom)
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
 
+fn parse_raw_equation(atoms: BTreeMap<String, Atom>, tokens: Vec<Token>) -> Result<RawEquation, String> {
+    todo!()
+}

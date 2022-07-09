@@ -10,7 +10,7 @@ pub struct Atom {
     pub atomic_mass_milli_uma: i64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub struct Molecule {
     pub atoms: BTreeMap<Atom, u32>,
 }
@@ -18,18 +18,22 @@ pub struct Molecule {
 impl fmt::Display for Molecule {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         for (atom, coef) in &self.atoms {
+            let status_res;
             if *coef == 1 {
-                write!(f, "{}", atom.code);
+                status_res = write!(f, "{}", atom.code);
             } else {
-                write!(f, "{}{}", atom.code, coef);
-            }
+                status_res = write!(f, "{}{}", atom.code, coef);
+            };
+            if status_res.is_err() { return status_res }
         }
         Ok(())
     }
 }
 
-#[derive(Debug)]
+// TODO implement Display for RawEquation
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub struct RawEquation {
-    pub lhs: Vec<(Molecule, u32)>,
-    pub rhs: Vec<(Molecule, u32)>
+    pub lhs: Vec<Molecule>,
+    pub rhs: Vec<Molecule>
 }

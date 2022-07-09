@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
 
-use TokenType::{Alphabetic, ClosingParenthesis, ClosingBracket, Delimiter, NoType, Numeric, OpeningParenthesis, OpeningBracket, Whitespace};
+use TokenType::{Alphabetic, ClosingParenthesis, ClosingBracket, Arrow, NoType, Numeric, OpeningParenthesis, OpeningBracket, Whitespace};
 
-use crate::chemistry::{Atom, Molecule};
+use crate::chemistry::{Atom, Molecule, RawEquation};
 use crate::parsing::TokenType::Plus;
 
 const ARROW_PARTS: [char; 4] = ['=', '-', '<', '>'];
@@ -17,7 +17,7 @@ pub enum TokenType {
     OpeningBracket,
     ClosingBracket,
     Plus,
-    Delimiter,
+    Arrow,
     Whitespace,
     NoType,
 }
@@ -41,7 +41,7 @@ fn token_type_for(c: &char) -> (TokenType, bool) {
         '[' => (OpeningBracket, true),
         ']' => (ClosingBracket, true),
         '+' => (Plus, true),
-        _ if ARROW_PARTS.contains(c) => (Delimiter, false),
+        _ if ARROW_PARTS.contains(c) => (Arrow, false),
         c if c.is_ascii_whitespace() => (Whitespace, false),
         _ => (NoType, false)
     }
@@ -173,10 +173,10 @@ fn parse_atoms_seq(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Resul
     Result::Ok(atoms_seq)
 }
 
-pub fn parse_molecule(atoms: &BTreeMap<String, Atom>, tokens: Vec<Token>) -> Result<Molecule, String> {
+pub fn parse_molecule(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Result<Molecule, String> {
     match check_token_seq(&tokens) {
         Result::Ok(()) => {
-            parse_atoms_seq(atoms, &tokens).map(|atoms_seq| {
+            parse_atoms_seq(atoms, tokens).map(|atoms_seq| {
                 Molecule {
                     atoms: atoms_seq
                 }
@@ -184,6 +184,66 @@ pub fn parse_molecule(atoms: &BTreeMap<String, Atom>, tokens: Vec<Token>) -> Res
         }
         Result::Err(msg) => Result::Err(msg)
     }
+}
 
+fn parse_raw_equation_member(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Result<Vec<Molecule>, String> {
+    let mut molecules: Vec<Molecule> = Vec::new();
+    let mut acc_molec_tokens: Vec<Token> = Vec::new();
+    for tok in tokens {
+        match tok.1 {
+            Whitespace => {}
+            Plus => {
+                let status_res = terminate_molecule(atoms, &mut molecules, &mut acc_molec_tokens);
+                if let Err(msg) = status_res { return Err(msg); }
+            }
+            Arrow | NoType => panic!("should not happen"),
+            _ => acc_molec_tokens.push(tok.clone())
+        }
+    }
+    let status_res = terminate_molecule(atoms, &mut molecules, &mut acc_molec_tokens);
+    if let Err(msg) = status_res { Err(msg) } else { Ok(molecules) }
+}
+
+fn terminate_molecule(atoms: &BTreeMap<String, Atom>, molecules: &mut Vec<Molecule>, acc_molec_tokens: &mut Vec<Token>) -> Result<(), String> {
+    let parsed = parse_molecule(atoms, &acc_molec_tokens);
+    acc_molec_tokens.clear();
+    match parsed {
+        Result::Ok(molecule) => {
+            molecules.push(molecule);
+            Result::Ok(())
+        }
+        Result::Err(msg) => Result::Err(msg)
+    }
+}
+
+pub fn parse_raw_equation(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Result<RawEquation, String> {
+    let mut lhs_tokens: Vec<Token> = Vec::new();
+    let mut rhs_tokens: Vec<Token> = Vec::new();
+    let mut member_idx = 0;
+    for tok in tokens {
+        match tok.1 {
+            Arrow => member_idx += 1,
+            _ => {
+                match member_idx {
+                    0 => lhs_tokens.push(tok.clone()),
+                    1 => rhs_tokens.push(tok.clone()),
+                    _ => return Result::Err(format!("more than 2 members in equation"))
+                }
+            }
+        }
+    }
+    if member_idx == 1 {
+        let (lhs, rhs) = match (
+            parse_raw_equation_member(atoms, &lhs_tokens),
+            parse_raw_equation_member(atoms, &rhs_tokens)
+        ) {
+            (Ok(l), Result::Ok(r)) => (l, r),
+            (Err(msg), _) => return Err(msg),
+            (_, Err(msg)) => return Err(msg)
+        };
+        Result::Ok(RawEquation { lhs, rhs })
+    } else {
+        Result::Err(format!("an equation must have exactly 2 members"))
+    }
 }
 

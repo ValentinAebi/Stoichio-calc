@@ -17,7 +17,7 @@ fn main() {
         code: "Na".to_string(),
         atomic_mass_milli_uma: 14_007
     };
-    println!("{}\n{}", natrium, oxygen);
+    println!("{:?}\n{:?}", natrium, oxygen);
     let water = Molecule {
         atoms: BTreeMap::from([
             (hydrogen, 2),

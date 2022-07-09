@@ -1,6 +1,7 @@
 mod parsing_tests {
-    use Stoichio_calc::parsing::{parse_atom, Token, tokenize, TokenType};
-    use Stoichio_calc::parsing::TokenType::{Alphabetic, Numeric};
+    use std::collections::BTreeMap;
+
+    use Stoichio_calc::parsing::{parse_molecule, Token, tokenize, TokenType};
 
     #[test]
     fn tokenize_test() {
@@ -28,19 +29,26 @@ mod parsing_tests {
     }
 
     #[test]
-    fn parse_atom_test() {
-        let molec_str = "H2O".to_string();
-        let mut tokens = tokenize(&molec_str);
-        let act = parse_atom(test_atoms::atoms_map(), &mut tokens);
-        assert_eq!(Vec::from([
-            Token("2".to_string(), Numeric),
-            Token("O".to_string(), Alphabetic)
-        ]), tokens);
-        assert_eq!(Some(test_atoms::hydrogen()), act)
+    fn parse_molecule_test() {
+        let molec_str = "Se(CH3)2O".to_string();
+        let parsed = parse_molecule(
+            &test_atoms::atoms_map(),
+            tokenize(&molec_str),
+        );
+        assert!(parsed.is_ok());
+        let actual_res = parsed.unwrap().atoms;
+        let expected_res = BTreeMap::from([
+            (test_atoms::selenium(), 1),
+            (test_atoms::carbon(), 2),
+            (test_atoms::hydrogen(), 6),
+            (test_atoms::oxygen(), 1)
+        ]);
+        assert_eq!(expected_res, actual_res);
     }
 
     mod test_atoms {
         use std::collections::BTreeMap;
+
         use Stoichio_calc::chemistry::Atom;
 
         pub fn hydrogen() -> Atom {
@@ -83,9 +91,17 @@ mod parsing_tests {
             }
         }
 
+        pub fn selenium() -> Atom {
+            Atom {
+                name: "selenium".to_string(),
+                code: "Se".to_string(),
+                atomic_mass_milli_uma: 78_960,
+            }
+        }
+
         pub fn all_atoms() -> Vec<Atom> {
             Vec::from([
-                hydrogen(), carbon(), oxygen(), nitrogen(), sodium()
+                hydrogen(), carbon(), oxygen(), nitrogen(), sodium(), selenium()
             ])
         }
 
@@ -94,9 +110,7 @@ mod parsing_tests {
                 |atom| { (atom.code.clone(), atom.clone()) }
             ).collect()
         }
-
     }
-
 }
 
 

@@ -31,6 +31,20 @@ impl Display for Token {
     }
 }
 
+#[derive(Eq, PartialEq, Debug, Clone)]
+pub struct PositionedError(pub String, pub Option<u64>);
+
+impl Display for PositionedError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if let Some(pos) = self.1 {
+            write!(f, "{}: {}", pos, self.0)
+        }
+        else {
+            write!(f, "?: {}", self.0)
+        }
+    }
+}
+
 /// returns (token_type, force_start)
 fn token_type_for(c: &char) -> (TokenType, bool) {
     match *c {
@@ -73,7 +87,7 @@ pub fn tokenize(txt: &String) -> Vec<Token> {
     tokens
 }
 
-fn check_token_seq(tokens: &Vec<Token>) -> Result<(), String> {
+fn check_token_seq(tokens: &Vec<Token>) -> Result<(), PositionedError> {
     let mut parentheses: Vec<Token> = Vec::new();
     for tok in tokens {
         match tok {
@@ -83,8 +97,14 @@ fn check_token_seq(tokens: &Vec<Token>) -> Result<(), String> {
                 match parentheses.pop() {
                     Some(Token(_, OpeningParenthesis, _)) => {}
                     Some(Token(_, OpeningBracket, opening_pos)) =>
-                        return Result::Err(format!("'[' at position {} closed by ')' at position {}", opening_pos, closing_pos)),
-                    None => return Result::Err("')' closed but never opened".to_string()),
+                        return Result::Err(PositionedError(
+                            format!("'[' at position {} closed by ')' at position {}", opening_pos, closing_pos),
+                            Some(*closing_pos)
+                        )),
+                    None => return Result::Err(PositionedError(
+                        "')' closed but never opened".to_string(),
+                        Some(*closing_pos)
+                    )),
                     _ => panic!("should not happen")
                 }
             }
@@ -92,20 +112,35 @@ fn check_token_seq(tokens: &Vec<Token>) -> Result<(), String> {
                 match parentheses.pop() {
                     Some(Token(_, OpeningBracket, _)) => {}
                     Some(Token(_, OpeningParenthesis, opening_pos)) =>
-                        return Result::Err(format!("'(' at position {} closed by ']' at position {}", opening_pos, closing_pos)),
-                    None => return Result::Err("']' closed but never opened".to_string()),
+                        return Result::Err(PositionedError(
+                            format!("'(' at position {} closed by ']' at position {}", opening_pos, closing_pos),
+                            Some(*closing_pos)
+                        )),
+                    None => return Result::Err(PositionedError(
+                        "']' closed but never opened".to_string(),
+                        Some(*closing_pos)
+                    )),
                     _ => panic!("should not happen")
                 }
             }
-            Token(txt, NoType, pos) => return Result::Err(format!("unrecognized token: {} at position {}", txt, pos)),
+            Token(txt, NoType, pos) => return Result::Err(PositionedError(
+                format!("unrecognized token: {} at position {}", txt, pos),
+                Some(*pos)
+            )),
             _ => {}
         }
     }
     match parentheses.pop() {
         Some(Token(_, OpeningBracket, pos)) =>
-            Result::Err(format!("'[' at position {} never closed", pos)),
+            Result::Err(PositionedError(
+                format!("'[' at position {} never closed", pos),
+                Some(pos)
+            )),
         Some(Token(_, OpeningParenthesis, pos)) =>
-            Result::Err(format!("'(' at position {} never closed", pos)),
+            Result::Err(PositionedError(
+                format!("'(' at position {} never closed", pos),
+                Some(pos)
+            )),
         Some(_) => panic!("should not happen"),
         None => Result::Ok(())
     }
@@ -116,7 +151,7 @@ fn merge_atom_into_seq(atoms_seq: &mut BTreeMap<Atom, u32>, atom: Atom, coef: u3
     atoms_seq.insert(atom.clone(), prev_coef + coef);
 }
 
-fn parse_atoms_seq(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Result<BTreeMap<Atom, u32>, String> {
+fn parse_atoms_seq(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Result<BTreeMap<Atom, u32>, PositionedError> {
     let mut rem_tokens = tokens.clone();
     let mut atoms_seq: BTreeMap<Atom, u32> = BTreeMap::new();
 
@@ -132,7 +167,10 @@ fn parse_atoms_seq(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Resul
                     } else { 1 };
                     merge_atom_into_seq(&mut atoms_seq, atom.clone(), curr_coef);
                 } else {
-                    return Result::Err(format!("unknown element: {} at position {}", alpha, pos));
+                    return Result::Err(PositionedError(
+                        format!("unknown element: {} at position {}", alpha, pos),
+                        Some(pos)
+                    ));
                 }
             }
             Token(_, OpeningParenthesis | OpeningBracket, _) => {
@@ -164,16 +202,22 @@ fn parse_atoms_seq(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Resul
                         err @ Result::Err(_) => return err
                     }
                 } else {
-                    return Result::Err(format!("unbalanced parentheses"));
+                    return Result::Err(PositionedError(
+                        format!("unbalanced parentheses"),
+                        None
+                    ));
                 }
             }
-            Token(_, _, pos) => return Result::Err(format!("unexpected: {} at position {}", next_tok, pos))
+            Token(_, _, pos) => return Result::Err(PositionedError(
+                format!("unexpected: {} at position {}", next_tok, pos),
+                Some(pos)
+            ))
         }
     }
     Result::Ok(atoms_seq)
 }
 
-pub fn parse_molecule(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Result<Molecule, String> {
+pub fn parse_molecule(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Result<Molecule, PositionedError> {
     match check_token_seq(&tokens) {
         Result::Ok(()) => {
             parse_atoms_seq(atoms, tokens).map(|atoms_seq| {
@@ -182,11 +226,11 @@ pub fn parse_molecule(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Re
                 }
             })
         }
-        Result::Err(msg) => Result::Err(msg)
+        Result::Err(err) => Result::Err(err)
     }
 }
 
-fn parse_raw_equation_member(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Result<Vec<Molecule>, String> {
+fn parse_raw_equation_member(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Result<Vec<Molecule>, PositionedError> {
     let mut molecules: Vec<Molecule> = Vec::new();
     let mut acc_molec_tokens: Vec<Token> = Vec::new();
     for tok in tokens {
@@ -194,17 +238,17 @@ fn parse_raw_equation_member(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>
             Whitespace => {}
             Plus => {
                 let status_res = terminate_molecule(atoms, &mut molecules, &mut acc_molec_tokens);
-                if let Err(msg) = status_res { return Err(msg); }
+                if let Err(err) = status_res { return Err(err); }
             }
             Arrow | NoType => panic!("should not happen"),
             _ => acc_molec_tokens.push(tok.clone())
         }
     }
     let status_res = terminate_molecule(atoms, &mut molecules, &mut acc_molec_tokens);
-    if let Err(msg) = status_res { Err(msg) } else { Ok(molecules) }
+    if let Err(err) = status_res { Err(err) } else { Ok(molecules) }
 }
 
-fn terminate_molecule(atoms: &BTreeMap<String, Atom>, molecules: &mut Vec<Molecule>, acc_molec_tokens: &mut Vec<Token>) -> Result<(), String> {
+fn terminate_molecule(atoms: &BTreeMap<String, Atom>, molecules: &mut Vec<Molecule>, acc_molec_tokens: &mut Vec<Token>) -> Result<(), PositionedError> {
     let parsed = parse_molecule(atoms, &acc_molec_tokens);
     acc_molec_tokens.clear();
     match parsed {
@@ -212,11 +256,11 @@ fn terminate_molecule(atoms: &BTreeMap<String, Atom>, molecules: &mut Vec<Molecu
             molecules.push(molecule);
             Result::Ok(())
         }
-        Result::Err(msg) => Result::Err(msg)
+        Result::Err(err) => Result::Err(err)
     }
 }
 
-pub fn parse_raw_equation(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Result<RawEquation, String> {
+pub fn parse_raw_equation(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Result<RawEquation, PositionedError> {
     let mut lhs_tokens: Vec<Token> = Vec::new();
     let mut rhs_tokens: Vec<Token> = Vec::new();
     let mut member_idx = 0;
@@ -227,7 +271,10 @@ pub fn parse_raw_equation(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -
                 match member_idx {
                     0 => lhs_tokens.push(tok.clone()),
                     1 => rhs_tokens.push(tok.clone()),
-                    _ => return Result::Err(format!("more than 2 members in equation"))
+                    _ => return Result::Err(PositionedError(
+                        format!("more than 2 members in equation"),
+                        Some(tok.2)
+                    ))
                 }
             }
         }
@@ -238,12 +285,15 @@ pub fn parse_raw_equation(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -
             parse_raw_equation_member(atoms, &rhs_tokens)
         ) {
             (Ok(l), Result::Ok(r)) => (l, r),
-            (Err(msg), _) => return Err(msg),
-            (_, Err(msg)) => return Err(msg)
+            (Err(err), _) => return Err(err),
+            (_, Err(err)) => return Err(err)
         };
         Result::Ok(RawEquation { lhs, rhs })
     } else {
-        Result::Err(format!("an equation must have exactly 2 members"))
+        Result::Err(PositionedError(
+            format!("an equation must have exactly 2 members"),
+            None
+        ))
     }
 }
 

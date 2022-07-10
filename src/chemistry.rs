@@ -8,12 +8,31 @@ use crate::return_on_error;
 pub struct Atom {
     pub code: String,
     pub name: String,
-    pub atomic_mass_milli_uma: i64,
+    pub atomic_mass_milli_uma: u64,
+}
+
+impl Atom {
+    pub fn atomic_mass_uma(&self) -> f64 {
+        (self.atomic_mass_milli_uma as f64) / 1000.0
+    }
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub struct Molecule {
     pub atoms: BTreeMap<Atom, u32>,
+}
+
+impl Molecule {
+    pub fn mass_milli_uma(&self) -> u64 {
+        let mut sum: u64 = 0;
+        for (atom, &coef) in &self.atoms {
+            sum += (coef as u64) * atom.atomic_mass_milli_uma;
+        }
+        sum
+    }
+    pub fn mass_uma(&self) -> f64 {
+        (self.mass_milli_uma() as f64) / 1000.0
+    }
 }
 
 impl fmt::Display for Molecule {

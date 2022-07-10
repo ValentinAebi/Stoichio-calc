@@ -1,4 +1,5 @@
 
+#[cfg(test)]
 mod data_loading_tests {
     use Stoichio_calc::data_loading::load_peridic_table_as_vec;
 

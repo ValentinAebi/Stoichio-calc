@@ -1,28 +1,12 @@
-use std::collections::BTreeMap;
 use Stoichio_calc::chemistry::{Atom, Molecule};
+use Stoichio_calc::data_loading::load_periodic_table_as_map;
+use Stoichio_calc::parsing::{parse_raw_equation, tokenize};
 
 fn main() {
-    let hydrogen = Atom {
-        name : "hydrogen".to_string(),
-        code: "H".to_string(),
-        atomic_mass_milli_uma: 1_007
-    };
-    let oxygen = Atom {
-        name: "oxygen".to_string(),
-        code: "O".to_string(),
-        atomic_mass_milli_uma: 15_999
-    };
-    let natrium = Atom {
-        name: "natrium".to_string(),
-        code: "Na".to_string(),
-        atomic_mass_milli_uma: 14_007
-    };
-    println!("{:?}\n{:?}", natrium, oxygen);
-    let water = Molecule {
-        atoms: BTreeMap::from([
-            (hydrogen, 2),
-            (oxygen, 1)
-        ])
-    };
-    println!("{}", water);
+    let eq_str = "H + O2 -> H2O".to_string();
+    let parsed_eq = parse_raw_equation(&load_periodic_table_as_map(), &tokenize(&eq_str));
+    match parsed_eq {
+        Ok(eq) => println!("{}", eq),
+        Err(msg) => println!("{}", msg)
+    }
 }

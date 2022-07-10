@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 use std::fmt;
-use std::fmt::Formatter;
+use std::fmt::{Display, Formatter};
 use std::hash::Hash;
+use crate::return_on_error;
 
 #[derive(PartialEq, Eq, Hash, Ord, PartialOrd, Debug, Clone)]
 pub struct Atom {
@@ -18,22 +19,28 @@ pub struct Molecule {
 impl fmt::Display for Molecule {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         for (atom, coef) in &self.atoms {
-            let status_res;
             if *coef == 1 {
-                status_res = write!(f, "{}", atom.code);
+                return_on_error!(write!(f, "{}", atom.code));
             } else {
-                status_res = write!(f, "{}{}", atom.code, coef);
+                return_on_error!(write!(f, "{}{}", atom.code, coef));
             };
-            if status_res.is_err() { return status_res }
         }
         Ok(())
     }
 }
 
-// TODO implement Display for RawEquation
-
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub struct RawEquation {
     pub lhs: Vec<Molecule>,
     pub rhs: Vec<Molecule>
+}
+
+impl Display for RawEquation {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let lhs_strs: Vec<String> = self.lhs.iter().map(|molec|{ molec.to_string() }).collect();
+        let lhs_str = lhs_strs.join(" + ");
+        let rhs_strs: Vec<String> = self.rhs.iter().map(|molec|{ molec.to_string() }).collect();
+        let rhs_str = rhs_strs.join(" + ");
+        write!(f, "{} => {}", lhs_str, rhs_str)
+    }
 }

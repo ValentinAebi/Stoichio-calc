@@ -1,9 +1,10 @@
+use std::collections::BTreeMap;
 use std::fs;
 use crate::chemistry::Atom;
 
 const CSV_SPLITTER: &str = ",";
 
-pub fn load_peridic_table() -> Vec<Atom> {
+pub fn load_peridic_table_as_vec() -> Vec<Atom> {
     match fs::read_to_string("./res/periodic_table.csv") {
         Result::Ok(content) => {
             content.lines().skip(1).map(|line|{
@@ -26,5 +27,12 @@ pub fn load_peridic_table() -> Vec<Atom> {
         }
     }
 
+}
+
+pub fn load_periodic_table_as_map() -> BTreeMap<String, Atom> {
+    load_peridic_table_as_vec()
+        .iter()
+        .map(|atom| { (atom.code.clone(), atom.clone()) })
+        .collect()
 }
 

@@ -4,7 +4,7 @@ mod test_atoms;
 
 #[cfg(test)]
 mod parsing_tests {
-    use std::collections::BTreeMap;
+    use std::collections::btree_map::BTreeMap;
     use Stoichio_calc::chemistry::{Atom, Molecule, RawEquation};
 
     use Stoichio_calc::parsing::{parse_molecule, parse_raw_equation, Token, tokenize, TokenType};

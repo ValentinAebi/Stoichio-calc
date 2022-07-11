@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::btree_map::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
 
 use TokenType::{Alphabetic, ClosingParenthesis, ClosingBracket, Arrow, NoType, Numeric, OpeningParenthesis, OpeningBracket, Whitespace};
@@ -209,7 +209,7 @@ fn parse_atoms_seq(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Resul
                 }
             }
             Token(_, _, pos) => return Result::Err(PositionedError(
-                format!("unexpected: {} at position {}", next_tok, pos),
+                format!("unexpected: '{}' at position {}", next_tok, pos),
                 Some(pos)
             ))
         }

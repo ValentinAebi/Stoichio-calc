@@ -1,6 +1,6 @@
 use std::cmp::max;
 use std::io::{BufRead, Write};
-use std::collections::BTreeMap;
+use std::collections::btree_map::BTreeMap;
 use std::process::exit;
 use Stoichio_calc::chemistry::Atom;
 use Stoichio_calc::data_loading::load_periodic_table_as_map;

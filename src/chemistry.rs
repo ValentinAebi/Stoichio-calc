@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::btree_map::BTreeMap;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::hash::Hash;

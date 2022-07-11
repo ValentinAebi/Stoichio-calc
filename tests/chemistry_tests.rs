@@ -5,7 +5,7 @@ mod test_atoms;
 
 #[cfg(test)]
 mod chemistry_tests {
-    use std::collections::BTreeMap;
+    use std::collections::btree_map::BTreeMap;
     use Stoichio_calc::chemistry::Molecule;
     use crate::test_atoms;
 

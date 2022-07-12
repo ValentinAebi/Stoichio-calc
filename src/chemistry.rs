@@ -20,6 +20,7 @@ impl Atom {
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub struct Molecule {
     pub atoms: BTreeMap<Atom, u32>,
+    pub charge: i32
 }
 
 impl Molecule {

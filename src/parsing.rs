@@ -1,10 +1,11 @@
 use std::collections::btree_map::BTreeMap;
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::{Debug, Display, format, Formatter};
+use std::io::repeat;
 
 use TokenType::{Alphabetic, ClosingParenthesis, ClosingBracket, Arrow, NoType, Numeric, OpeningParenthesis, OpeningBracket, Whitespace};
 
 use crate::chemistry::{Atom, Molecule, RawEquation};
-use crate::parsing::TokenType::Plus;
+use crate::parsing::TokenType::{Exponent, Minus, Plus};
 
 const ARROW_PARTS: [char; 4] = ['=', '-', '<', '>'];
 
@@ -17,6 +18,8 @@ pub enum TokenType {
     OpeningBracket,
     ClosingBracket,
     Plus,
+    Minus,
+    Exponent,
     Arrow,
     Whitespace,
     NoType,
@@ -55,6 +58,8 @@ fn token_type_for(c: &char) -> (TokenType, bool) {
         '[' => (OpeningBracket, true),
         ']' => (ClosingBracket, true),
         '+' => (Plus, true),
+        '-' => (Minus, true),
+        '^' => (Exponent, true),
         _ if ARROW_PARTS.contains(c) => (Arrow, false),
         c if c.is_ascii_whitespace() => (Whitespace, false),
         _ => (NoType, false)
@@ -151,9 +156,11 @@ fn merge_atom_into_seq(atoms_seq: &mut BTreeMap<Atom, u32>, atom: Atom, coef: u3
     atoms_seq.insert(atom.clone(), prev_coef + coef);
 }
 
-fn parse_atoms_seq(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Result<BTreeMap<Atom, u32>, PositionedError> {
+fn parse_atoms_seq(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Result<(BTreeMap<Atom, u32>, i32), PositionedError> {
+
     let mut rem_tokens = tokens.clone();
     let mut atoms_seq: BTreeMap<Atom, u32> = BTreeMap::new();
+    let mut charge = 0;
 
     while !rem_tokens.is_empty() {
         let next_tok = rem_tokens.remove(0);
@@ -194,10 +201,11 @@ fn parse_atoms_seq(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Resul
                         parsed_factor
                     } else { 1 };
                     match parse_atoms_seq(atoms, &sub_seq) {
-                        Result::Ok(sub_molec_atoms) => {
+                        Result::Ok((sub_molec_atoms, sub_charge)) => {
                             for (at, coef) in sub_molec_atoms {
                                 merge_atom_into_seq(&mut atoms_seq, at, mul_factor * coef);
                             }
+                            charge += sub_charge * (mul_factor as i32);
                         }
                         err @ Result::Err(_) => return err
                     }
@@ -208,21 +216,49 @@ fn parse_atoms_seq(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Resul
                     ));
                 }
             }
+            Token(_, Exponent, pos_exp) => {
+                match (rem_tokens.get(0), rem_tokens.get(1)){
+                    (
+                        Some(Token(_, sign @ (Plus | Minus), _)),
+                        Some(Token(num_str, Numeric, _))
+                    ) | (
+                        Some(Token(num_str, Numeric, _)),
+                        Some(Token(_, sign @ (Plus | Minus), _))
+                    ) => {
+                        let num: i32 = num_str.parse().unwrap();
+                        charge += if *sign == Plus { num } else { -num };
+                        rem_tokens.remove(0);
+                        rem_tokens.remove(0);
+                    }
+                    (
+                        Some(Token(_, sign @ (Plus | Minus), _)),
+                        _
+                    ) => {
+                        if *sign == Plus { charge += 1 } else { charge -= 1 };
+                        rem_tokens.remove(0);
+                    }
+                    _ => return Err(PositionedError(
+                        format!("charge format error, expected '^<charge><+/->', e.g. '^3+', or '^<+/-><charge>', e.g. '^+3'"),
+                        Some(pos_exp)
+                    ))
+                }
+            }
             Token(_, _, pos) => return Result::Err(PositionedError(
                 format!("unexpected: '{}' at position {}", next_tok, pos),
                 Some(pos)
             ))
         }
     }
-    Result::Ok(atoms_seq)
+    Result::Ok((atoms_seq, charge))
 }
 
 pub fn parse_molecule(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Result<Molecule, PositionedError> {
     match check_token_seq(&tokens) {
         Result::Ok(()) => {
-            parse_atoms_seq(atoms, tokens).map(|atoms_seq| {
+            parse_atoms_seq(atoms, tokens).map(|(atoms_seq, charge)| {
                 Molecule {
-                    atoms: atoms_seq
+                    atoms: atoms_seq,
+                    charge
                 }
             })
         }
@@ -233,13 +269,27 @@ pub fn parse_molecule(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Re
 fn parse_raw_equation_member(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Result<Vec<Molecule>, PositionedError> {
     let mut molecules: Vec<Molecule> = Vec::new();
     let mut acc_molec_tokens: Vec<Token> = Vec::new();
+    let mut expect_charge_plus_or_minus = false;
     for tok in tokens {
         match tok.1 {
             Whitespace => {}
-            Plus => {
-                let status_res = terminate_molecule(atoms, &mut molecules, &mut acc_molec_tokens);
-                if let Err(err) = status_res { return Err(err); }
+            Exponent => {
+                expect_charge_plus_or_minus = true;
+                acc_molec_tokens.push(tok.clone());
             }
+            Plus => {
+                if expect_charge_plus_or_minus {
+                    expect_charge_plus_or_minus = false;
+                    acc_molec_tokens.push(tok.clone());
+                } else {
+                    let status_res = terminate_molecule(atoms, &mut molecules, &mut acc_molec_tokens);
+                    if let Err(err) = status_res { return Err(err); }
+                }
+            },
+            Minus => {
+                if expect_charge_plus_or_minus { expect_charge_plus_or_minus = false }
+                acc_molec_tokens.push(tok.clone());
+            },
             Arrow | NoType => panic!("should not happen"),
             _ => acc_molec_tokens.push(tok.clone())
         }

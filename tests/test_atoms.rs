@@ -67,9 +67,26 @@ pub fn plutonium() -> Atom {
     }
 }
 
+pub fn iron() -> Atom {
+    Atom {
+        name: "iron".to_string(),
+        code: "Fe".to_string(),
+        atomic_mass_milli_uma: 55_845
+    }
+}
+
+pub fn copper() -> Atom {
+    Atom {
+        name: "Copper".to_string(),
+        code: "Cu".to_string(),
+        atomic_mass_milli_uma: 63_546
+    }
+}
+
 pub fn all_atoms() -> Vec<Atom> {
     Vec::from([
-        hydrogen(), carbon(), oxygen(), nitrogen(), sodium(), selenium(), rubidium(), plutonium()
+        hydrogen(), carbon(), oxygen(), nitrogen(), sodium(), selenium(), rubidium(), plutonium(),
+        iron(), copper()
     ])
 }
 

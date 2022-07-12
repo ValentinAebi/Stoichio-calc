@@ -16,7 +16,8 @@ mod chemistry_tests {
                 (test_atoms::carbon(), 6),
                 (test_atoms::hydrogen(), 12),
                 (test_atoms::oxygen(), 6)
-            ])
+            ]),
+            charge: 0
         };
         assert_near(180.16, molecule.mass_uma(), 0.05)
     }

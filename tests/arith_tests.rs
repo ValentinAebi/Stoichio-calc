@@ -12,7 +12,7 @@ fn gcd_25_45_test(){
 
 #[test]
 fn gcd_35_minus77_test(){
-    assert_eq!(7, gcd(35, -77).abs())
+    assert_eq!(7, gcd(35, -77))
 }
 
 #[test]
@@ -32,7 +32,7 @@ fn lcm_45_25_test(){
 
 #[test]
 fn lcm_minus44_100_test(){
-    assert_eq!(11*25*4, lcm(-44, 100).abs())
+    assert_eq!(11*25*4, lcm(-44, 100))
 }
 
 #[test]

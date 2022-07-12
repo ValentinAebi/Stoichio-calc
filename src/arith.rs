@@ -1,5 +1,7 @@
 
 pub fn gcd(a: i32, b: i32) -> i32 {
+    let a = a.abs();
+    let b = b.abs();
     if a == 0 { b }
     else if b == 0 { a }
     else {
@@ -19,6 +21,8 @@ pub fn gcd_vec(vec: &Vec<i32>) -> i32 {
 }
 
 pub fn lcm(a: i32, b: i32) -> i32 {
+    let a = a.abs();
+    let b = b.abs();
     a*b / gcd(a, b)
 }
 

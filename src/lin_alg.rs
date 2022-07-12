@@ -7,7 +7,6 @@ use crate::return_on_error;
 pub struct Matrix(Vec<Vec<i32>>);
 
 impl Matrix {
-
     pub fn of_arr(arr: &[&[i32]]) -> Self {
         let mut coefs: Vec<Vec<i32>> = Vec::new();
         for row in arr {
@@ -63,7 +62,7 @@ impl Display for Matrix {
 }
 
 #[allow(dead_code)]
-fn print_matrix_like(coefs: &Vec<Vec<i32>>){
+fn print_matrix_like(coefs: &Vec<Vec<i32>>) {
     for row in coefs {
         for coef in row {
             print!("{:4} ", coef);
@@ -82,8 +81,8 @@ macro_rules! return_if_false {
     }
 }
 
-fn place_first_non_zero_at(coefs: &mut Vec<Vec<i32>>, pivot_idx: usize, diag_len: usize) -> bool {
-    for r in pivot_idx..diag_len {
+fn place_first_non_zero_at(coefs: &mut Vec<Vec<i32>>, pivot_idx: usize, n_rows: usize, n_cols: usize) -> bool {
+    for r in pivot_idx..n_rows {
         if coefs[r][pivot_idx] != 0 {
             if r > pivot_idx {
                 coefs.swap(r, pivot_idx);
@@ -91,19 +90,29 @@ fn place_first_non_zero_at(coefs: &mut Vec<Vec<i32>>, pivot_idx: usize, diag_len
             return true;
         }
     }
-    false
+    // if rows from the pivot row are all 0s then it is ok
+    for r in pivot_idx..n_rows {
+        for c in 0..n_cols {
+            if coefs[r][c] != 0 {
+                return false
+            }
+        }
+    }
+    true
 }
 
-fn simplify_row_if_possible(row: &mut Vec<i32>){
+fn simplify_row_if_possible(row: &mut Vec<i32>) {
     let gcd = gcd_vec(row);
-    for i in 0..row.len() {
-        row[i] /= gcd;
+    if gcd != 0 {
+        for i in 0..row.len() {
+            row[i] /= gcd;
+        }
     }
 }
 
 fn zero_out_row_at_col(coefs: &mut Vec<Vec<i32>>, row_to_zero_out_idx: usize, pivot_idx: usize) {
-    if coefs[row_to_zero_out_idx][pivot_idx] != 0 {
-        let pivot = coefs[pivot_idx][pivot_idx];
+    let pivot = coefs[pivot_idx][pivot_idx];
+    if pivot != 0 && coefs[row_to_zero_out_idx][pivot_idx] != 0 {
         let lcm = lcm(coefs[row_to_zero_out_idx][pivot_idx], pivot);
         let row_mul = lcm / coefs[row_to_zero_out_idx][pivot_idx];
         let pivot_row_mul = lcm / pivot;
@@ -115,8 +124,8 @@ fn zero_out_row_at_col(coefs: &mut Vec<Vec<i32>>, row_to_zero_out_idx: usize, pi
     }
 }
 
-fn diagonalize(coefs: &mut Vec<Vec<i32>>, n_rows: usize, n_col: usize) -> bool {
-    let diag_len: usize = min(n_rows, n_col);
+fn diagonalize(coefs: &mut Vec<Vec<i32>>, n_rows: usize, n_cols: usize) -> bool {
+    let diag_len: usize = min(n_rows, n_cols);
 
     for i in 0..coefs.len() {
         simplify_row_if_possible(&mut coefs[i]);
@@ -124,8 +133,8 @@ fn diagonalize(coefs: &mut Vec<Vec<i32>>, n_rows: usize, n_col: usize) -> bool {
 
     let zero_out_bottom_left = |coefs: &mut Vec<Vec<i32>>| {
         for pivot_idx in 0..diag_len {
-            return_if_false!(place_first_non_zero_at(coefs, pivot_idx, diag_len));
-            for r in (pivot_idx + 1)..diag_len {
+            return_if_false!(place_first_non_zero_at(coefs, pivot_idx, n_rows, n_cols));
+            for r in (pivot_idx + 1)..n_rows {
                 zero_out_row_at_col(coefs, r, pivot_idx)
             }
         }
@@ -140,8 +149,19 @@ fn diagonalize(coefs: &mut Vec<Vec<i32>>, n_rows: usize, n_col: usize) -> bool {
         }
     };
 
+    let make_pivots_non_negative = |coefs: &mut Vec<Vec<i32>>|{
+        for pivot_idx in 0..diag_len {
+            if coefs[pivot_idx][pivot_idx] < 0 {
+                for i in 0..n_cols {
+                    coefs[pivot_idx][i] *= -1;
+                }
+            }
+        }
+    };
+
     return_if_false!(zero_out_bottom_left(coefs));
     zero_out_top_right(coefs);
+    make_pivots_non_negative(coefs);
     true
 }
 

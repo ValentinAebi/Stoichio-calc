@@ -6,7 +6,7 @@ const CSV_SPLITTER: &str = ",";
 
 pub fn load_peridic_table_as_vec() -> Vec<Atom> {
     match fs::read_to_string("./res/periodic_table.csv") {
-        Result::Ok(content) => {
+        Ok(content) => {
             content.lines().skip(1).map(|line|{
                 let cols_to_match: Vec<&str> = line.split(CSV_SPLITTER).take(4).collect();
                 match cols_to_match[..] {
@@ -22,7 +22,7 @@ pub fn load_peridic_table_as_vec() -> Vec<Atom> {
                 }
             }).collect()
         }
-        Result::Err(_) => {
+        Err(_) => {
             panic!("could not load resource file")
         }
     }

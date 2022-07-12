@@ -1,5 +1,4 @@
 use std::cmp::min;
-use std::f32::consts::E;
 use std::fmt::{Display, Formatter};
 use crate::arith::{gcd_vec, lcm};
 use crate::return_on_error;

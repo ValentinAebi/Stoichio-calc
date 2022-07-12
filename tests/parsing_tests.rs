@@ -182,11 +182,11 @@ mod parsing_tests {
             &tokenize(&input.to_string()),
         );
         match parsed {
-            Result::Ok(molecule) => {
+            Ok(molecule) => {
                 assert_eq!(expected_atoms, molecule.atoms);
                 assert_eq!(expected_charge, molecule.charge);
             }
-            Result::Err(msg) => {
+            Err(msg) => {
                 println!("Failure: parsed was:");
                 println!("{}", msg);
                 assert!(false);

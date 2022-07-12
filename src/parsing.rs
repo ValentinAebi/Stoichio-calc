@@ -3,7 +3,7 @@ use std::fmt::{Debug, Display, Formatter};
 
 use TokenType::{Alphabetic, ClosingParenthesis, ClosingBracket, Arrow, NoType, Numeric, OpeningParenthesis, OpeningBracket, Whitespace};
 
-use crate::chemistry::{Atom, Molecule, RawEquation};
+use crate::chemistry::{Atom, Molecule, PeriodicTable, RawEquation};
 use crate::parsing::TokenType::{Exponent, Minus, Plus};
 
 const ARROW_PARTS: [char; 4] = ['=', '-', '<', '>'];
@@ -25,6 +25,7 @@ pub enum TokenType {
 }
 
 #[derive(Eq, PartialEq, Debug, Clone)]
+/// Token(string, type, position)
 pub struct Token(pub String, pub TokenType, pub u64);
 
 impl Display for Token {
@@ -34,6 +35,7 @@ impl Display for Token {
 }
 
 #[derive(Eq, PartialEq, Debug, Clone)]
+/// PositionedError(error message, optional position)
 pub struct PositionedError(pub String, pub Option<u64>);
 
 impl Display for PositionedError {
@@ -47,7 +49,7 @@ impl Display for PositionedError {
     }
 }
 
-/// returns (token_type, force_start)
+/// Returns (token_type, force_start)
 fn token_type_for(c: &char) -> (TokenType, bool) {
     match *c {
         c if c.is_alphabetic() => (Alphabetic, c.is_uppercase()),
@@ -91,6 +93,9 @@ pub fn tokenize(txt: &String) -> Vec<Token> {
     tokens
 }
 
+/// Check parentheses and makes sure that no `NoType` token is in the `tokens` vector
+///
+/// Returns `Err(message)` if a violation is found, `Ok(())` o.w.
 fn check_token_seq(tokens: &Vec<Token>) -> Result<(), PositionedError> {
     let mut parentheses: Vec<Token> = Vec::new();
     for tok in tokens {
@@ -150,12 +155,18 @@ fn check_token_seq(tokens: &Vec<Token>) -> Result<(), PositionedError> {
     }
 }
 
+/// If `atoms_seq` already contains a coefficient for `atom`, then increment it by `coef`
+///
+/// Else, add an entry `atom` -> `coef`
 fn merge_atom_into_seq(atoms_seq: &mut BTreeMap<Atom, u32>, atom: Atom, coef: u32) {
     let prev_coef = if let Some(&c) = atoms_seq.get(&atom) { c } else { 0 };
     atoms_seq.insert(atom.clone(), prev_coef + coef);
 }
 
-fn parse_atoms_seq(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Result<(BTreeMap<Atom, u32>, i32), PositionedError> {
+/// Parses an atom sequence expected to correspond to a molecule (or a part of it)
+///
+/// Returns a map atom -> coef and a charge (in a pair), or a `PositionedError` if an error occurs
+fn parse_atoms_seq(atoms: &PeriodicTable, tokens: &Vec<Token>) -> Result<(BTreeMap<Atom, u32>, i32), PositionedError> {
 
     let mut rem_tokens = tokens.clone();
     let mut atoms_seq: BTreeMap<Atom, u32> = BTreeMap::new();
@@ -164,6 +175,8 @@ fn parse_atoms_seq(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Resul
     while !rem_tokens.is_empty() {
         let next_tok = rem_tokens.remove(0);
         match next_tok {
+
+            // alphabetic token -> atom, possibly followed by a coefficient
             Token(alpha, Alphabetic, pos) => {
                 if let Some(atom) = atoms.get(&alpha) {
                     let curr_coef: u32 = if let Some(Token(num, Numeric, _)) = rem_tokens.get(0) {
@@ -179,6 +192,8 @@ fn parse_atoms_seq(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Resul
                     ));
                 }
             }
+
+            // parenthesis token, need to parse the sequence between the parentheses recursively
             Token(_, OpeningParenthesis | OpeningBracket, _) => {
                 let mut sub_seq: Vec<Token> = Vec::new();
                 let mut depth = 1;
@@ -215,6 +230,8 @@ fn parse_atoms_seq(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Resul
                     ));
                 }
             }
+
+            // exponent token (for charge); expect '+' or '-' and possibly a number
             Token(_, Exponent, pos_exp) => {
                 match (rem_tokens.get(0), rem_tokens.get(1)){
                     (
@@ -242,6 +259,8 @@ fn parse_atoms_seq(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Resul
                     ))
                 }
             }
+
+            // unexpected token: format error
             Token(_, _, pos) => return Err(PositionedError(
                 format!("unexpected: '{}' at position {}", next_tok, pos),
                 Some(pos)
@@ -251,7 +270,8 @@ fn parse_atoms_seq(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Resul
     Ok((atoms_seq, charge))
 }
 
-pub fn parse_molecule(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Result<Molecule, PositionedError> {
+/// `periodic_table` - all possible atoms in the molecule
+pub fn parse_molecule(atoms: &PeriodicTable, tokens: &Vec<Token>) -> Result<Molecule, PositionedError> {
     match check_token_seq(&tokens) {
         Ok(()) => {
             parse_atoms_seq(atoms, tokens).map(|(atoms_seq, charge)| {
@@ -265,10 +285,13 @@ pub fn parse_molecule(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Re
     }
 }
 
-fn parse_raw_equation_member(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Result<Vec<Molecule>, PositionedError> {
+fn parse_raw_equation_member(periodic_table: &PeriodicTable, tokens: &Vec<Token>) -> Result<Vec<Molecule>, PositionedError> {
     let mut molecules: Vec<Molecule> = Vec::new();
     let mut acc_molec_tokens: Vec<Token> = Vec::new();
+
+    // to distinguish between '+' between molecules and '+' for the charge
     let mut expect_charge_plus_or_minus = false;
+
     for tok in tokens {
         match tok.1 {
             Whitespace => {}
@@ -281,7 +304,7 @@ fn parse_raw_equation_member(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>
                     expect_charge_plus_or_minus = false;
                     acc_molec_tokens.push(tok.clone());
                 } else {
-                    let status_res = terminate_molecule(atoms, &mut molecules, &mut acc_molec_tokens);
+                    let status_res = terminate_molecule(periodic_table, &mut molecules, &mut acc_molec_tokens);
                     if let Err(err) = status_res { return Err(err); }
                 }
             },
@@ -293,12 +316,13 @@ fn parse_raw_equation_member(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>
             _ => acc_molec_tokens.push(tok.clone())
         }
     }
-    let status_res = terminate_molecule(atoms, &mut molecules, &mut acc_molec_tokens);
+    let status_res = terminate_molecule(periodic_table, &mut molecules, &mut acc_molec_tokens);
     if let Err(err) = status_res { Err(err) } else { Ok(molecules) }
 }
 
-fn terminate_molecule(atoms: &BTreeMap<String, Atom>, molecules: &mut Vec<Molecule>, acc_molec_tokens: &mut Vec<Token>) -> Result<(), PositionedError> {
-    let parsed = parse_molecule(atoms, &acc_molec_tokens);
+/// Tries to parse the molecule described by the tokens in `acc_molec_tokens`, adds it to `molecules` and clears `acc_molec_tokens`
+fn terminate_molecule(periodic_table: &PeriodicTable, molecules: &mut Vec<Molecule>, acc_molec_tokens: &mut Vec<Token>) -> Result<(), PositionedError> {
+    let parsed = parse_molecule(periodic_table, &acc_molec_tokens);
     acc_molec_tokens.clear();
     match parsed {
         Ok(molecule) => {
@@ -309,7 +333,8 @@ fn terminate_molecule(atoms: &BTreeMap<String, Atom>, molecules: &mut Vec<Molecu
     }
 }
 
-pub fn parse_raw_equation(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -> Result<RawEquation, PositionedError> {
+/// `periodic_table` - all possible atoms in the molecule
+pub fn parse_raw_equation(periodic_table: &PeriodicTable, tokens: &Vec<Token>) -> Result<RawEquation, PositionedError> {
     let mut lhs_tokens: Vec<Token> = Vec::new();
     let mut rhs_tokens: Vec<Token> = Vec::new();
     let mut member_idx = 0;
@@ -330,8 +355,8 @@ pub fn parse_raw_equation(atoms: &BTreeMap<String, Atom>, tokens: &Vec<Token>) -
     }
     if member_idx == 1 {
         let (lhs, rhs) = match (
-            parse_raw_equation_member(atoms, &lhs_tokens),
-            parse_raw_equation_member(atoms, &rhs_tokens)
+            parse_raw_equation_member(periodic_table, &lhs_tokens),
+            parse_raw_equation_member(periodic_table, &rhs_tokens)
         ) {
             (Ok(l), Ok(r)) => (l, r),
             (Err(err), _) => return Err(err),

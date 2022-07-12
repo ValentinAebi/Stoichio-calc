@@ -1,12 +1,12 @@
 use std::cmp::max;
-use std::io::{BufRead, Write};
 use std::collections::btree_map::BTreeMap;
+use std::io::{BufRead, Write};
 use std::process::exit;
-use Stoichio_calc::chemistry::Atom;
-use Stoichio_calc::data_loading::load_periodic_table_as_map;
+
+use Stoichio_calc::chemistry::PeriodicTable;
+use Stoichio_calc::data_loading::load_periodic_table;
 use Stoichio_calc::parsing::{parse_molecule, PositionedError, tokenize};
 
-type PeriodicTable = BTreeMap<String, Atom>;
 type ArgsCommand = fn(&str, &PeriodicTable) -> Result<(), PositionedError>;
 type NoArgsCommand = fn(&PeriodicTable) -> Result<(), PositionedError>;
 
@@ -17,19 +17,18 @@ const HELP_TEXT_LINES: [&str; 3] = [
 ];
 
 struct Context<'a> {
-    periodic_table: BTreeMap<String, Atom>,
+    periodic_table: PeriodicTable,
     args_cmds: BTreeMap<&'a str, &'a ArgsCommand>,
     no_args_cmds: BTreeMap<&'a str, &'a NoArgsCommand>,
 }
 
 fn main() {
-
     let compute_mass: ArgsCommand = compute_mass_cmd;
     let exit: NoArgsCommand = exit_cmd;
     let help: NoArgsCommand = help_cmd;
 
     let ctx = Context {
-        periodic_table: load_periodic_table_as_map(),
+        periodic_table: load_periodic_table(),
         args_cmds: BTreeMap::from([
             ("mass", &compute_mass)
         ]),
@@ -75,12 +74,12 @@ fn call_no_arg_command(cmd: &str, ctx: &Context) -> Result<(), PositionedError> 
     } else if ctx.args_cmds.contains_key(cmd) {
         Err(PositionedError(
             format!("{} needs argument(s)", cmd),
-            None
+            None,
         ))
     } else {
         Err(PositionedError(
             format!("unknown command: {}", cmd),
-            None
+            None,
         ))
     }
 }
@@ -91,29 +90,29 @@ fn call_arg_command(cmd: &str, args: &str, ctx: &Context) -> Result<(), Position
     } else if ctx.no_args_cmds.contains_key(cmd) {
         Err(PositionedError(
             format!("{} does not take arguments", cmd),
-            None
+            None,
         ))
     } else {
         Err(PositionedError(
             format!("unknown command: {}", cmd),
-            None
+            None,
         ))
     }
 }
 
-fn display_input_line_header(){
+fn display_input_line_header() {
     print!("> ");
     let _ = std::io::stdout().flush();
 }
 
-fn display_help(){
+fn display_help() {
     for line in HELP_TEXT_LINES {
         println!("{}", line)
     }
     println!();
 }
 
-fn compute_mass_cmd(args: &str, periodic_table: &BTreeMap<String, Atom>) -> Result<(), PositionedError> {
+fn compute_mass_cmd(args: &str, periodic_table: &PeriodicTable) -> Result<(), PositionedError> {
     match parse_molecule(periodic_table, &tokenize(&args.to_string())) {
         Ok(molecule) => {
             Ok(println!("molecular mass: {} uma", molecule.mass_uma()))

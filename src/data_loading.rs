@@ -1,6 +1,5 @@
-use std::collections::btree_map::BTreeMap;
 use std::fs;
-use crate::chemistry::Atom;
+use crate::chemistry::{Atom, PeriodicTable};
 
 const CSV_SPLITTER: &str = ",";
 
@@ -29,7 +28,7 @@ pub fn load_peridic_table_as_vec() -> Vec<Atom> {
 
 }
 
-pub fn load_periodic_table_as_map() -> BTreeMap<String, Atom> {
+pub fn load_periodic_table() -> PeriodicTable {
     load_peridic_table_as_vec()
         .iter()
         .map(|atom| { (atom.code.clone(), atom.clone()) })

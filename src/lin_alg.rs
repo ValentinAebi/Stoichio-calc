@@ -4,6 +4,7 @@ use crate::arith::{gcd_vec, lcm};
 use crate::return_on_error;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
+// self.0 is the bi-dimensional row-major vector containing the coefficients
 pub struct Matrix(Vec<Vec<i32>>);
 
 impl Matrix {
@@ -25,7 +26,7 @@ impl Matrix {
         Matrix(coefs.clone())
     }
 
-    pub fn at(&self, row: usize, col: usize) -> i32 {
+    pub fn coef_at(&self, row: usize, col: usize) -> i32 {
         self.0[row][col]
     }
 
@@ -41,6 +42,7 @@ impl Matrix {
         self.0[0].len()
     }
 
+    /// Returns an equivalent diagonal matrix, or reports an error
     pub fn diagonalized(&self) -> Result<Matrix, ()> {
         let mut coefs = self.coefs();
         let res = diagonalize(&mut coefs, self.n_rows(), self.n_cols());
@@ -81,6 +83,12 @@ macro_rules! return_if_false {
     }
 }
 
+/// Searches the first row s.t. its coef. at index `pivot_idx` is non zero
+/// 
+/// If found, swaps this row with the one at index `pivot_idx`
+/// 
+/// Returns `true` if such a row was found or if all the rows starting at `pivot_idx` are 0s, o.w.
+/// returns `false` (to report that diagonalizing is impossible)
 fn place_first_non_zero_at(coefs: &mut Vec<Vec<i32>>, pivot_idx: usize, n_rows: usize, n_cols: usize) -> bool {
     for r in pivot_idx..n_rows {
         if coefs[r][pivot_idx] != 0 {
@@ -101,6 +109,7 @@ fn place_first_non_zero_at(coefs: &mut Vec<Vec<i32>>, pivot_idx: usize, n_rows: 
     true
 }
 
+/// Divides all coefficients in the row by their GCD
 fn simplify_row_if_possible(row: &mut Vec<i32>) {
     let gcd = gcd_vec(row);
     if gcd != 0 {
@@ -110,6 +119,7 @@ fn simplify_row_if_possible(row: &mut Vec<i32>) {
     }
 }
 
+/// Uses operations on the rows to zero out `coef[row_to_zero_out_idx][pivot_idx]`
 fn zero_out_row_at_col(coefs: &mut Vec<Vec<i32>>, row_to_zero_out_idx: usize, pivot_idx: usize) {
     let pivot = coefs[pivot_idx][pivot_idx];
     if pivot != 0 && coefs[row_to_zero_out_idx][pivot_idx] != 0 {
@@ -124,6 +134,9 @@ fn zero_out_row_at_col(coefs: &mut Vec<Vec<i32>>, row_to_zero_out_idx: usize, pi
     }
 }
 
+/// Uses Gaussian elimination to transform `coefs` into an equivalent diagonal matrix
+/// 
+/// Returns `true` iff it succeeds
 fn diagonalize(coefs: &mut Vec<Vec<i32>>, n_rows: usize, n_cols: usize) -> bool {
     let diag_len: usize = min(n_rows, n_cols);
 

@@ -1,7 +1,5 @@
 
-use std::collections::btree_map::BTreeMap;
-
-use Stoichio_calc::chemistry::Atom;
+use Stoichio_calc::chemistry::{Atom, PeriodicTable};
 
 #[allow(unused)]
 pub fn hydrogen() -> Atom {
@@ -102,7 +100,7 @@ pub fn all_atoms() -> Vec<Atom> {
 }
 
 #[allow(unused)]
-pub fn atoms_map() -> BTreeMap<String, Atom> {
+pub fn atoms_map() -> PeriodicTable {
     all_atoms().iter().map(
         |atom| { (atom.code.clone(), atom.clone()) }
     ).collect()

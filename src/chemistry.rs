@@ -49,6 +49,8 @@ impl fmt::Display for Molecule {
     }
 }
 
+pub type PeriodicTable = BTreeMap<String, Atom>;
+
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub struct RawEquation {
     pub lhs: Vec<Molecule>,

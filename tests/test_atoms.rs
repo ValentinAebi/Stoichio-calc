@@ -3,6 +3,7 @@ use std::collections::btree_map::BTreeMap;
 
 use Stoichio_calc::chemistry::Atom;
 
+#[allow(unused)]
 pub fn hydrogen() -> Atom {
     Atom {
         name: "hydrogen".to_string(),
@@ -11,6 +12,7 @@ pub fn hydrogen() -> Atom {
     }
 }
 
+#[allow(unused)]
 pub fn carbon() -> Atom {
     Atom {
         name: "carbon".to_string(),
@@ -19,6 +21,7 @@ pub fn carbon() -> Atom {
     }
 }
 
+#[allow(unused)]
 pub fn oxygen() -> Atom {
     Atom {
         name: "oxygen".to_string(),
@@ -27,6 +30,7 @@ pub fn oxygen() -> Atom {
     }
 }
 
+#[allow(unused)]
 pub fn nitrogen() -> Atom {
     Atom {
         name: "nitrogen".to_string(),
@@ -35,6 +39,7 @@ pub fn nitrogen() -> Atom {
     }
 }
 
+#[allow(unused)]
 pub fn sodium() -> Atom {
     Atom {
         name: "sodium".to_string(),
@@ -43,6 +48,7 @@ pub fn sodium() -> Atom {
     }
 }
 
+#[allow(unused)]
 pub fn selenium() -> Atom {
     Atom {
         name: "selenium".to_string(),
@@ -51,6 +57,7 @@ pub fn selenium() -> Atom {
     }
 }
 
+#[allow(unused)]
 pub fn rubidium() -> Atom {
     Atom {
         name: "rubidium".to_string(),
@@ -59,6 +66,7 @@ pub fn rubidium() -> Atom {
     }
 }
 
+#[allow(unused)]
 pub fn plutonium() -> Atom {
     Atom {
         name: "plutonium".to_string(),
@@ -67,6 +75,7 @@ pub fn plutonium() -> Atom {
     }
 }
 
+#[allow(unused)]
 pub fn iron() -> Atom {
     Atom {
         name: "iron".to_string(),
@@ -75,6 +84,7 @@ pub fn iron() -> Atom {
     }
 }
 
+#[allow(unused)]
 pub fn copper() -> Atom {
     Atom {
         name: "Copper".to_string(),
@@ -83,6 +93,7 @@ pub fn copper() -> Atom {
     }
 }
 
+#[allow(unused)]
 pub fn all_atoms() -> Vec<Atom> {
     Vec::from([
         hydrogen(), carbon(), oxygen(), nitrogen(), sodium(), selenium(), rubidium(), plutonium(),
@@ -90,6 +101,7 @@ pub fn all_atoms() -> Vec<Atom> {
     ])
 }
 
+#[allow(unused)]
 pub fn atoms_map() -> BTreeMap<String, Atom> {
     all_atoms().iter().map(
         |atom| { (atom.code.clone(), atom.clone()) }

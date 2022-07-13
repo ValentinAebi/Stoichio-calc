@@ -42,10 +42,6 @@ impl Molecule {
         (self.mass_milli_uma() as f64) / 1000.0
     }
 
-    pub fn chemically_equals(&self, other: &Molecule) -> bool {
-        self.atoms == other.atoms && self.charge == other.charge
-    }
-
     fn default_fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         for (atom, coef) in &self.atoms {
             if *coef == 1 {

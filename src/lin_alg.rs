@@ -46,7 +46,7 @@ impl Matrix {
     pub fn diagonalized(&self) -> Result<Matrix, ()> {
         let mut coefs = self.coefs();
         let res = diagonalize(&mut coefs, self.n_rows(), self.n_cols());
-        if res { Ok(Matrix(coefs)) } else { Err(()) }
+        if res { Ok(Matrix::of_row_major(&coefs)) } else { Err(()) }
     }
 }
 

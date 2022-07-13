@@ -51,11 +51,13 @@ mod chemistry_tests {
         };
         let raw_equation = RawEquation {
             lhs: Vec::from([ h2o.clone(), co2.clone() ]),
-            rhs: Vec::from([ c6h12o6.clone(), o2.clone() ])
+            rhs: Vec::from([ c6h12o6.clone(), o2.clone() ]),
+            arrow: "=>".to_string()
         };
         let expected_balanced_equation = BalancedEquation {
             lhs: Vec::from([ (h2o, 6), (co2, 6) ]),
-            rhs: Vec::from([ (c6h12o6, 1), (o2, 6) ])
+            rhs: Vec::from([ (c6h12o6, 1), (o2, 6) ]),
+            arrow: "=>".to_string()
         };
         let balanced_equation_res = balance(&raw_equation);
         assert!(balanced_equation_res.is_ok());

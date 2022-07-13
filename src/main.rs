@@ -3,43 +3,40 @@ use std::collections::btree_map::BTreeMap;
 use std::io::{BufRead, Write};
 use std::process::exit;
 
-use Stoichio_calc::chemistry::PeriodicTable;
+use Stoichio_calc::chemistry::{balance, PeriodicTable};
 use Stoichio_calc::data_loading::load_periodic_table;
-use Stoichio_calc::parsing::{parse_molecule, PositionedError, tokenize};
+use Stoichio_calc::parsing::{parse_molecule, parse_raw_equation, PositionedError, tokenize};
 
-type ArgsCommand = fn(&str, &PeriodicTable) -> Result<(), PositionedError>;
-type NoArgsCommand = fn(&PeriodicTable) -> Result<(), PositionedError>;
-
-const HELP_TEXT_LINES: [&str; 3] = [
-    "mass <molecule> - display the atomic mass of the molecule in uma",
-    "help - display the current explanations",
-    "exit - exit the program"
-];
+type ArgsCommand = fn(&str, &Context) -> Result<(), PositionedError>;
+type NoArgsCommand = fn(&Context) -> Result<(), PositionedError>;
 
 struct Context<'a> {
     periodic_table: PeriodicTable,
-    args_cmds: BTreeMap<&'a str, &'a ArgsCommand>,
-    no_args_cmds: BTreeMap<&'a str, &'a NoArgsCommand>,
+    args_cmds: BTreeMap<&'a str, (&'a ArgsCommand, &'a str)>,
+    no_args_cmds: BTreeMap<&'a str, (&'a NoArgsCommand, &'a str)>,
 }
 
 fn main() {
-    let compute_mass: ArgsCommand = compute_mass_cmd;
-    let exit: NoArgsCommand = exit_cmd;
-    let help: NoArgsCommand = help_cmd;
+
+    // include resource file in .exe
+    let periodic_table_file_content = include_str!("../res/periodic_table.csv");
 
     let ctx = Context {
-        periodic_table: load_periodic_table(),
+        periodic_table: load_periodic_table(periodic_table_file_content),
         args_cmds: BTreeMap::from([
-            ("mass", &compute_mass)
+            ("mass", (&(compute_mass_cmd as ArgsCommand),
+                      "mass <molecule> - display the atomic mass of the molecule in uma")),
+            ("balance", (&(balance_equation_cmd as ArgsCommand),
+                         "balance <equation> - balances the equation, e.g. 'balance H2 + O2 => H2O'"))
         ]),
         no_args_cmds: BTreeMap::from([
-            ("exit", &exit),
-            ("help", &help)
+            ("exit", (&(exit_cmd as NoArgsCommand), "exit - exit the program")),
+            ("help", (&(help_cmd as NoArgsCommand), "help - display the current explanations"))
         ]),
     };
 
-    println!("\n -------------------- Stoechiometry calculator CLI -------------------- \n");
-    display_help();
+    println!("\n -------------------- Stoichiometry calculator CLI -------------------- \n");
+    display_help(&ctx);
 
     display_input_line_header();
     for line_res in std::io::stdin().lock().lines() {
@@ -69,8 +66,8 @@ fn main() {
 }
 
 fn call_no_arg_command(cmd: &str, ctx: &Context) -> Result<(), PositionedError> {
-    if let Some(cmd_fn) = ctx.no_args_cmds.get(cmd) {
-        cmd_fn(&ctx.periodic_table)
+    if let Some((cmd_fn, _)) = ctx.no_args_cmds.get(cmd) {
+        cmd_fn(&ctx)
     } else if ctx.args_cmds.contains_key(cmd) {
         Err(PositionedError(
             format!("{} needs argument(s)", cmd),
@@ -85,8 +82,8 @@ fn call_no_arg_command(cmd: &str, ctx: &Context) -> Result<(), PositionedError> 
 }
 
 fn call_arg_command(cmd: &str, args: &str, ctx: &Context) -> Result<(), PositionedError> {
-    if let Some(cmd_fn) = ctx.args_cmds.get(cmd) {
-        cmd_fn(args, &ctx.periodic_table)
+    if let Some((cmd_fn, _)) = ctx.args_cmds.get(cmd) {
+        cmd_fn(args, &ctx)
     } else if ctx.no_args_cmds.contains_key(cmd) {
         Err(PositionedError(
             format!("{} does not take arguments", cmd),
@@ -105,15 +102,18 @@ fn display_input_line_header() {
     let _ = std::io::stdout().flush();
 }
 
-fn display_help() {
-    for line in HELP_TEXT_LINES {
-        println!("{}", line)
+fn display_help(ctx: &Context) {
+    for cmd in &ctx.args_cmds {
+        println!("{}", cmd.1.1)
+    }
+    for cmd in &ctx.no_args_cmds {
+        println!("{}", cmd.1.1)
     }
     println!();
 }
 
-fn compute_mass_cmd(args: &str, periodic_table: &PeriodicTable) -> Result<(), PositionedError> {
-    match parse_molecule(periodic_table, &tokenize(&args.to_string())) {
+fn compute_mass_cmd(args: &str, ctx: &Context) -> Result<(), PositionedError> {
+    match parse_molecule(&ctx.periodic_table, &tokenize(&args.to_string())) {
         Ok(molecule) => {
             Ok(println!("molecular mass: {} uma", molecule.mass_uma()))
         }
@@ -121,11 +121,26 @@ fn compute_mass_cmd(args: &str, periodic_table: &PeriodicTable) -> Result<(), Po
     }
 }
 
-fn exit_cmd(_periodic_table: &PeriodicTable) -> Result<(), PositionedError> {
+fn balance_equation_cmd(args: &str, ctx: &Context) -> Result<(), PositionedError> {
+    match parse_raw_equation(&ctx.periodic_table, &tokenize(&args.to_string())){
+        Ok(raw_equation) => {
+            match balance(&raw_equation){
+                Ok(balanced_equation) => {
+                    println!("{}", balanced_equation);
+                    Ok(())
+                }
+                Err(pos_err) => Err(pos_err)
+            }
+        }
+        Err(pos_err) => Err(pos_err)
+    }
+}
+
+fn exit_cmd(_ctx: &Context) -> Result<(), PositionedError> {
     exit(0)
 }
 
-fn help_cmd(_periodic_table: &PeriodicTable) -> Result<(), PositionedError> {
-    display_help();
+fn help_cmd(ctx: &Context) -> Result<(), PositionedError> {
+    display_help(ctx);
     Ok(())
 }

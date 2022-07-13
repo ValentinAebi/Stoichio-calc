@@ -69,10 +69,11 @@ impl fmt::Display for Molecule {
 
 pub type PeriodicTable = BTreeMap<String, Atom>;
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct RawEquation {
     pub lhs: Vec<Molecule>,
-    pub rhs: Vec<Molecule>
+    pub rhs: Vec<Molecule>,
+    pub arrow: String
 }
 
 impl RawEquation {
@@ -92,14 +93,15 @@ impl Display for RawEquation {
         let lhs_str = lhs_strs.join(" + ");
         let rhs_strs: Vec<String> = self.rhs.iter().map(|molec|{ molec.to_string() }).collect();
         let rhs_str = rhs_strs.join(" + ");
-        write!(f, "{} => {}", lhs_str, rhs_str)
+        write!(f, "{} {} {}", lhs_str, self.arrow, rhs_str)
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct BalancedEquation {
     pub lhs: Vec<(Molecule, i32)>,
-    pub rhs: Vec<(Molecule, i32)>
+    pub rhs: Vec<(Molecule, i32)>,
+    pub arrow: String
 }
 
 fn format_equation_member(member: &Vec<(Molecule, i32)>) -> String {
@@ -113,7 +115,7 @@ fn format_equation_member(member: &Vec<(Molecule, i32)>) -> String {
 
 impl Display for BalancedEquation {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{} => {}", format_equation_member(&self.lhs), format_equation_member(&self.rhs))
+        write!(f, "{} {} {}", format_equation_member(&self.lhs), self.arrow, format_equation_member(&self.rhs))
     }
 }
 
@@ -169,7 +171,8 @@ pub fn balance(raw_eq: &RawEquation) -> Result<BalancedEquation, PositionedError
                         .collect(),
                     rhs: raw_eq.rhs.iter().zip(rhs_sols)
                         .map(|(molec, coef)|{(molec.clone(), coef.clone())})
-                        .collect()
+                        .collect(),
+                    arrow: raw_eq.arrow.clone()
                 })
             }
             else {

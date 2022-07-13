@@ -6,7 +6,7 @@ use TokenType::{Alphabetic, ClosingParenthesis, ClosingBracket, Arrow, NoType, N
 use crate::chemistry::{Atom, Molecule, PeriodicTable, RawEquation};
 use crate::parsing::TokenType::{Exponent, Minus, Plus};
 
-const ARROW_PARTS: [char; 4] = ['=', '-', '<', '>'];
+const ARROW_PARTS: [char; 3] = ['=', '<', '>'];
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
 pub enum TokenType {
@@ -339,10 +339,14 @@ fn terminate_molecule(periodic_table: &PeriodicTable, molecules: &mut Vec<Molecu
 pub fn parse_raw_equation(periodic_table: &PeriodicTable, tokens: &Vec<Token>) -> Result<RawEquation, PositionedError> {
     let mut lhs_tokens: Vec<Token> = Vec::new();
     let mut rhs_tokens: Vec<Token> = Vec::new();
+    let mut arrow: String = String::new();
     let mut member_idx = 0;
     for tok in tokens {
         match tok.1 {
-            Arrow => member_idx += 1,
+            Arrow => {
+                arrow = tok.0.clone();
+                member_idx += 1;
+            },
             _ => {
                 match member_idx {
                     0 => lhs_tokens.push(tok.clone()),
@@ -364,7 +368,7 @@ pub fn parse_raw_equation(periodic_table: &PeriodicTable, tokens: &Vec<Token>) -
             (Err(err), _) => return Err(err),
             (_, Err(err)) => return Err(err)
         };
-        Ok(RawEquation { lhs, rhs })
+        Ok(RawEquation { lhs, rhs, arrow })
     } else {
         Err(PositionedError(
             format!("an equation must have exactly 2 members"),

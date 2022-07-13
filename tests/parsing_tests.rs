@@ -136,7 +136,8 @@ mod parsing_tests {
         };
         let expected = RawEquation {
             lhs: Vec::from([c6h12o6, o2]),
-            rhs: Vec::from([h2o, co2])
+            rhs: Vec::from([h2o, co2]),
+            arrow: "=>".to_string()
         };
         let actual_res =
             parse_raw_equation(&test_atoms::atoms_map(), &tokenize(&eq_str));
@@ -178,7 +179,8 @@ mod parsing_tests {
         let actual_res = parse_raw_equation(&test_atoms::atoms_map(), &tokenize(&eq_str));
         let expected = RawEquation {
             lhs: Vec::from([fe, cu_2plus]),
-            rhs: Vec::from([fe_2plus, cu])
+            rhs: Vec::from([fe_2plus, cu]),
+            arrow: "=>".to_string()
         };
         assert!(actual_res.is_ok());
         assert_eq!(expected, actual_res.unwrap())

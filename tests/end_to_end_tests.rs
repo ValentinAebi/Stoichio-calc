@@ -4,7 +4,7 @@
  */
 
 mod end_to_end_tests {
-
+    use std::fs;
     use Stoichio_calc::chemistry::balance;
     use Stoichio_calc::data_loading::load_periodic_table;
     use Stoichio_calc::parsing::{parse_raw_equation, tokenize};
@@ -22,13 +22,13 @@ mod end_to_end_tests {
 
     equation_balancing_test!("Zn + HCl => ZnCl2 + H2", "Zn + 2 HCl => ZnCl2 + H2", zn_x_hcl_test);
 
-    equation_balancing_test!("Ca(OH)2 + H3PO4 => Ca3(PO4)2 + H2O", "3 Ca(OH)2 + 2 H3PO4 => Ca3(PO4)2 + 6 H2O", ca_oh2_x_h3po4_test);
+    equation_balancing_test!("Ca(OH)2 + H3PO4 ==> Ca3(PO4)2 + H2O", "3 Ca(OH)2 + 2 H3PO4 ==> Ca3(PO4)2 + 6 H2O", ca_oh2_x_h3po4_test);
 
     equation_balancing_test!("FeCl3 + NH4OH => Fe(OH)3 + NH4Cl", "FeCl3 + 3 NH4OH => Fe(OH)3 + 3 NH4Cl", fecl3_x_nh4oh_test);
 
     equation_balancing_test!("S8 + F2 => SF6", "S8 + 24 F2 => 8 SF6", s8_x_f2_test);
 
-    equation_balancing_test!("C2H6 + O2 => CO2 + H2O", "2 C2H6 + 7 O2 => 4 CO2 + 6 H2O", c2h6_x_o2_test);
+    equation_balancing_test!("C2H6 + O2 <=> CO2 + H2O", "2 C2H6 + 7 O2 <=> 4 CO2 + 6 H2O", c2h6_x_o2_test);
 
     equation_balancing_test!("Al2(CO3)3 + H3PO4 => AlPO4 + CO2 + H2O", "Al2(CO3)3 + 2 H3PO4 => 2 AlPO4 + 3 CO2 + 3 H2O", al2_co3_3_x_h3po4_test);
 
@@ -39,7 +39,7 @@ mod end_to_end_tests {
     fn perform_equation_balancing_test(input_eq: &str, expected_output_eq: &str) {
         let parsed_raw_eq =
             parse_raw_equation(
-                &load_periodic_table(),
+                &load_periodic_table(fs::read_to_string("./res/periodic_table.csv").unwrap().as_str()),
                 &tokenize(&input_eq.to_string()),
             );
         assert!(parsed_raw_eq.is_ok());

@@ -1,7 +1,6 @@
 /*
- * Despite being called end-to-end, these tests do not test the CLI
- *
  * The equations are taken from http://www.sky-web.net/science/balancing_chemical_equations_examples.htm
+ * and https://opentextbc.ca/introductorychemistry/chapter/balancing-redox-reactions/
  */
 
 mod end_to_end_tests {
@@ -32,6 +31,10 @@ mod end_to_end_tests {
     equation_balancing_test!("C2H6 + O2 => CO2 + H2O", "2 C2H6 + 7 O2 => 4 CO2 + 6 H2O", c2h6_x_o2_test);
 
     equation_balancing_test!("Al2(CO3)3 + H3PO4 => AlPO4 + CO2 + H2O", "Al2(CO3)3 + 2 H3PO4 => 2 AlPO4 + 3 CO2 + 3 H2O", al2_co3_3_x_h3po4_test);
+
+    equation_balancing_test!("Fe^2+ + Cr => Fe + Cr^3+", "3 Fe^2+ + 2 Cr => 3 Fe + 2 Cr^3+", fe2plus_x_cr_test);
+
+    equation_balancing_test!("O^-2 + F2 => O2 + F^-", "2 O^-2 + 2 F2 => O2 + 4 F^-", o2minus2_x_f2_test);
 
     fn perform_equation_balancing_test(input_eq: &str, expected_output_eq: &str) {
         let parsed_raw_eq =

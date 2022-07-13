@@ -17,7 +17,8 @@ mod chemistry_tests {
                 (test_atoms::hydrogen(), 12),
                 (test_atoms::oxygen(), 6)
             ]),
-            charge: 0
+            charge: 0,
+            string_repr: None
         };
         assert_near(180.16, molecule.mass_uma(), 0.05)
     }
@@ -26,11 +27,13 @@ mod chemistry_tests {
     fn balance_photosynthesis_eq_test(){
         let h2o = Molecule {
             atoms: BTreeMap::from([(test_atoms::hydrogen(), 2), (test_atoms::oxygen(), 1)]),
-            charge: 0
+            charge: 0,
+            string_repr: None
         };
         let co2 = Molecule {
             atoms: BTreeMap::from([(test_atoms::carbon(), 1), (test_atoms::oxygen(), 2)]),
-            charge: 0
+            charge: 0,
+            string_repr: None
         };
         let c6h12o6 = Molecule {
             atoms: BTreeMap::from([
@@ -38,11 +41,13 @@ mod chemistry_tests {
                 (test_atoms::hydrogen(), 12),
                 (test_atoms::oxygen(), 6)
             ]),
-            charge: 0
+            charge: 0,
+            string_repr: None
         };
         let o2 = Molecule {
             atoms: BTreeMap::from([(test_atoms::oxygen(), 2)]),
-            charge: 0
+            charge: 0,
+            string_repr: None
         };
         let raw_equation = RawEquation {
             lhs: Vec::from([ h2o.clone(), co2.clone() ]),

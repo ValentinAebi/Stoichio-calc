@@ -275,9 +275,11 @@ pub fn parse_molecule(atoms: &PeriodicTable, tokens: &Vec<Token>) -> Result<Mole
     match check_token_seq(&tokens) {
         Ok(()) => {
             parse_atoms_seq(atoms, tokens).map(|(atoms_seq, charge)| {
+                let str_repr: String = tokens.iter().map(|tok| { format!("{}", tok.0) }).collect();
                 Molecule {
                     atoms: atoms_seq,
-                    charge
+                    charge,
+                    string_repr: Some(str_repr)
                 }
             })
         }

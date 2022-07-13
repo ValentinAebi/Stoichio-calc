@@ -24,10 +24,12 @@ impl Atom {
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub struct Molecule {
     pub atoms: BTreeMap<Atom, u32>,
-    pub charge: i32
+    pub charge: i32,
+    pub string_repr: Option<String>
 }
 
 impl Molecule {
+
     pub fn mass_milli_uma(&self) -> u64 {
         let mut sum: u64 = 0;
         for (atom, &coef) in &self.atoms {
@@ -35,13 +37,16 @@ impl Molecule {
         }
         sum
     }
+
     pub fn mass_uma(&self) -> f64 {
         (self.mass_milli_uma() as f64) / 1000.0
     }
-}
 
-impl fmt::Display for Molecule {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    pub fn chemically_equals(&self, other: &Molecule) -> bool {
+        self.atoms == other.atoms && self.charge == other.charge
+    }
+
+    fn default_fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         for (atom, coef) in &self.atoms {
             if *coef == 1 {
                 return_on_error!(write!(f, "{}", atom.code));
@@ -50,6 +55,19 @@ impl fmt::Display for Molecule {
             };
         }
         Ok(())
+    }
+
+}
+
+impl fmt::Display for Molecule {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if let Some(string_repr) = &self.string_repr {
+            write!(f, "{}", string_repr)
+        }
+        else {
+            self.default_fmt(f)
+        }
     }
 }
 

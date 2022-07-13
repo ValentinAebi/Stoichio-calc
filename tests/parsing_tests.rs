@@ -116,19 +116,23 @@ mod parsing_tests {
                 (test_atoms::hydrogen(), 12),
                 (test_atoms::oxygen(), 6)
             ]),
-            charge: 0
+            charge: 0,
+            string_repr: Some("C6H12O6".to_string())
         };
         let o2 = Molecule {
             atoms: BTreeMap::from([(test_atoms::oxygen(), 2)]),
-            charge: 0
+            charge: 0,
+            string_repr: Some("O2".to_string())
         };
         let h2o = Molecule {
             atoms: BTreeMap::from([(test_atoms::hydrogen(), 2), (test_atoms::oxygen(), 1)]),
-            charge: 0
+            charge: 0,
+            string_repr: Some("H2O".to_string())
         };
         let co2 = Molecule {
             atoms: BTreeMap::from([(test_atoms::carbon(), 1), (test_atoms::oxygen(), 2)]),
-            charge: 0
+            charge: 0,
+            string_repr: Some("CO2".to_string())
         };
         let expected = RawEquation {
             lhs: Vec::from([c6h12o6, o2]),
@@ -147,25 +151,29 @@ mod parsing_tests {
             atoms: BTreeMap::from([
                 (test_atoms::iron(), 1)
             ]),
-            charge: 0
+            charge: 0,
+            string_repr: Some("Fe".to_string())
         };
         let cu_2plus = Molecule {
             atoms: BTreeMap::from([
                 (test_atoms::copper(), 1)
             ]),
-            charge: 2
+            charge: 2,
+            string_repr: Some("Cu^2+".to_string())
         };
         let fe_2plus = Molecule {
             atoms: BTreeMap::from([
                 (test_atoms::iron(), 1)
             ]),
-            charge: 2
+            charge: 2,
+            string_repr: Some("Fe^2+".to_string())
         };
         let cu = Molecule {
             atoms: BTreeMap::from([
                 (test_atoms::copper(), 1)
             ]),
-            charge: 0
+            charge: 0,
+            string_repr: Some("Cu".to_string())
         };
         let actual_res = parse_raw_equation(&test_atoms::atoms_map(), &tokenize(&eq_str));
         let expected = RawEquation {

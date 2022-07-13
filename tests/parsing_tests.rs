@@ -108,7 +108,7 @@ mod parsing_tests {
     }
 
     #[test]
-    fn parse_photosynthesis_equation_test(){
+    fn parse_respiration_equation_test(){
         let eq_str = "C6H12O6 + O2 => H2O + CO2".to_string();
         let c6h12o6 = Molecule {
             atoms: BTreeMap::from([

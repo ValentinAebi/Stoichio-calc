@@ -48,6 +48,38 @@ impl Matrix {
         let res = diagonalize(&mut coefs, self.n_rows(), self.n_cols());
         if res { Ok(Matrix::of_row_major(&coefs)) } else { Err(()) }
     }
+    
+    fn is_row_full_zeros(row: &Vec<i32>) -> bool {
+        for &coef in row {
+            if coef != 0 {
+                return false
+            }
+        }
+        true
+    }
+    
+    pub fn without_full_zero_rows(&self) -> Matrix {
+        let mut coefs = self.coefs();
+        coefs.retain(|row|{ !Self::is_row_full_zeros(row) });
+        Matrix::of_row_major(&coefs)
+    }
+    
+    pub fn diagonal(&self) -> Vec<i32> {
+        let mut diagonal: Vec<i32> = Vec::new();
+        for i in 0..min(self.n_rows(), self.n_cols()){
+            diagonal.push(self.coef_at(i, i));
+        }
+        diagonal
+    }
+    
+    pub fn column(&self, col_idx: usize) -> Vec<i32> {
+        let mut col: Vec<i32> = Vec::new();
+        for r in 0..self.n_rows() {
+            col.push(self.coef_at(r, col_idx))
+        }
+        col
+    }
+    
 }
 
 impl Display for Matrix {

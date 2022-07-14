@@ -29,9 +29,9 @@ fn main() {
             ("mass", (&(compute_mass_cmd as ArgsCommand),
                       "mass <molecule> - display the atomic mass of the molecule in uma")),
             ("balance", (&(balance_equation_cmd as ArgsCommand),
-                         "balance <equation> - balances the equation, e.g. 'balance H2 + O2 => H2O'")),
+                         "balance <equation> - balance the equation, e.g. 'balance H2 + O2 => H2O'")),
             ("compute", (&(compute_products_cmd as ArgsCommand),
-            "compute <equation> - computes the amounts of reactives, e.g. 'compute 1 mol H2 + 0.5 g O2 => H2O'"))
+            "compute <equation> - compute the amounts of products, e.g. 'compute 1 mol H2 + 0.5 g O2 => H2O'"))
         ]),
         no_args_cmds: BTreeMap::from([
             ("exit", (&(exit_cmd as NoArgsCommand), "exit - exit the program")),
@@ -77,6 +77,7 @@ fn execute_cmd(ctx: &Context, raw_line: &String) {
             println!("{}^", padding)
         }
     }
+    println!();
 }
 
 fn call_no_arg_command(cmd: &str, ctx: &Context) -> Result<(), PositionedError> {

@@ -4,6 +4,7 @@ use std::fmt;
 use std::fmt::{Display, format, Formatter};
 use std::hash::Hash;
 use crate::arith::lcm_vec;
+use crate::chemistry::ChemUnit::{Gram, Milligram, Mol};
 use crate::lin_alg::Matrix;
 use crate::parsing::PositionedError;
 use crate::return_on_error;
@@ -116,6 +117,57 @@ fn format_equation_member(member: &Vec<(Molecule, i32)>) -> String {
 impl Display for BalancedEquation {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{} {} {}", format_equation_member(&self.lhs), self.arrow, format_equation_member(&self.rhs))
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub enum ChemUnit {
+    Gram,
+    Milligram,
+    Mol
+}
+
+pub fn chem_unit_for(txt: &String) -> Result<ChemUnit, ()> {
+    match txt.as_str() {
+        "g" => Ok(Gram),
+        "mg" => Ok(Milligram),
+        "mol" => Ok(Mol),
+        _ => Err(())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ChemQuantity(pub f64, pub ChemUnit);
+
+#[derive(Debug, Clone)]
+pub struct QuantifiedEquation {
+    pub lhs: Vec<(Molecule, Option<ChemQuantity>)>,
+    pub rhs: Vec<(Molecule, Option<ChemQuantity>)>,
+    pub arrow: String
+}
+
+impl QuantifiedEquation {
+
+    pub fn to_raw_eq(&self) -> RawEquation {
+        RawEquation {
+            lhs: self.lhs.iter().map(|p|{p.0.clone()}).collect(),
+            rhs: self.rhs.iter().map(|p|{p.0.clone()}).collect(),
+            arrow: self.arrow.clone()
+        }
+    }
+
+    pub fn is_raw_eq(&self) -> bool {
+        for (_, chem_quant_opt) in &self.lhs {
+            if chem_quant_opt.is_some() {
+                return false
+            }
+        }
+        for (_, chem_quant_opt) in &self.rhs {
+            if chem_quant_opt.is_some() {
+                return false
+            }
+        }
+        true
     }
 }
 

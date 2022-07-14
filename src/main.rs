@@ -1,5 +1,6 @@
 use std::cmp::max;
 use std::collections::btree_map::BTreeMap;
+use std::env::args;
 use std::io::{BufRead, Write};
 use std::process::exit;
 
@@ -35,33 +36,43 @@ fn main() {
         ]),
     };
 
+    let args: Vec<String> = args().skip(1).collect();
+    if args.is_empty() { run_cli(&ctx); }
+    else { execute_cmd(&ctx, &args.join("")); }
+
+}
+
+fn run_cli(ctx: &Context){
     println!("\n -------------------- Stoichiometry calculator CLI -------------------- \n");
     display_help(&ctx);
-
     display_input_line_header();
     for line_res in std::io::stdin().lock().lines() {
         if let Ok(raw_line) = line_res {
-            let trimmed_line = raw_line.trim();
-            let sp: Vec<&str> = trimmed_line
-                .splitn(2, ' ')
-                .collect();
-            let result: Result<(), PositionedError> = match sp[..] {
-                [] => Ok(()), // empty line, do nothing
-                [cmd] => call_no_arg_command(cmd, &ctx),
-                [cmd, args] => call_arg_command(&cmd.to_lowercase(), args, &ctx),
-                _ => panic!("should not happen")
-            };
-            if let Err(PositionedError(msg, pos_opt)) = result {
-                println!("an error occured: {}", msg);
-                if let Some(pos) = pos_opt {
-                    let padding_len = sp[0].len() + max(1 + pos, 0) as usize;
-                    let padding = str::repeat(" ", padding_len);
-                    println!("{}", trimmed_line);
-                    println!("{}^", padding)
-                }
-            }
+            execute_cmd(ctx, &raw_line)
         } else { println!("input line error") }
         display_input_line_header();
+    }
+}
+
+fn execute_cmd(ctx: &Context, raw_line: &String) {
+    let trimmed_line = raw_line.trim();
+    let sp: Vec<&str> = trimmed_line
+        .splitn(2, ' ')
+        .collect();
+    let result: Result<(), PositionedError> = match sp[..] {
+        [] => Ok(()), // empty line, do nothing
+        [cmd] => call_no_arg_command(cmd, &ctx),
+        [cmd, args] => call_arg_command(&cmd.to_lowercase(), args, &ctx),
+        _ => panic!("should not happen")
+    };
+    if let Err(PositionedError(msg, pos_opt)) = result {
+        println!("an error occured: {}", msg);
+        if let Some(pos) = pos_opt {
+            let padding_len = sp[0].len() + max(1 + pos, 0) as usize;
+            let padding = str::repeat(" ", padding_len);
+            println!("{}", trimmed_line);
+            println!("{}^", padding)
+        }
     }
 }
 

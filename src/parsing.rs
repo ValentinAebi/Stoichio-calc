@@ -3,8 +3,9 @@ use std::fmt::{Debug, Display, Formatter};
 
 use TokenType::{Alphabetic, ClosingParenthesis, ClosingBracket, Arrow, NoType, Numeric, OpeningParenthesis, OpeningBracket, Whitespace};
 
-use crate::chemistry::{Atom, Molecule, PeriodicTable, RawEquation};
-use crate::parsing::TokenType::{Exponent, Minus, Plus};
+use crate::chemistry::{Atom, chem_unit_for, ChemQuantity, Molecule, PeriodicTable, QuantifiedEquation, RawEquation};
+use crate::parsing::TokenType::{Dot, Exponent, Minus, Plus};
+use crate::return_on_error;
 
 const ARROW_PARTS: [char; 3] = ['=', '<', '>'];
 
@@ -12,6 +13,7 @@ const ARROW_PARTS: [char; 3] = ['=', '<', '>'];
 pub enum TokenType {
     Alphabetic,
     Numeric,
+    Dot,
     OpeningParenthesis,
     ClosingParenthesis,
     OpeningBracket,
@@ -34,7 +36,7 @@ impl Display for Token {
     }
 }
 
-#[derive(Eq, PartialEq, Debug, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 /// PositionedError(error message, optional position)
 pub struct PositionedError(pub String, pub Option<u64>);
 
@@ -42,8 +44,7 @@ impl Display for PositionedError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if let Some(pos) = self.1 {
             write!(f, "{}: {}", pos, self.0)
-        }
-        else {
+        } else {
             write!(f, "?: {}", self.0)
         }
     }
@@ -54,6 +55,7 @@ fn token_type_for(c: &char) -> (TokenType, bool) {
     match *c {
         c if c.is_alphabetic() => (Alphabetic, c.is_uppercase()),
         c if c.is_numeric() => (Numeric, false),
+        '.' => (Dot, true),
         '(' => (OpeningParenthesis, true),
         ')' => (ClosingParenthesis, true),
         '[' => (OpeningBracket, true),
@@ -108,11 +110,11 @@ fn check_token_seq(tokens: &Vec<Token>) -> Result<(), PositionedError> {
                     Some(Token(_, OpeningBracket, opening_pos)) =>
                         return Err(PositionedError(
                             format!("'[' at position {} closed by ')' at position {}", opening_pos, closing_pos),
-                            Some(*closing_pos)
+                            Some(*closing_pos),
                         )),
                     None => return Err(PositionedError(
                         "')' closed but never opened".to_string(),
-                        Some(*closing_pos)
+                        Some(*closing_pos),
                     )),
                     _ => panic!("should not happen")
                 }
@@ -123,18 +125,18 @@ fn check_token_seq(tokens: &Vec<Token>) -> Result<(), PositionedError> {
                     Some(Token(_, OpeningParenthesis, opening_pos)) =>
                         return Err(PositionedError(
                             format!("'(' at position {} closed by ']' at position {}", opening_pos, closing_pos),
-                            Some(*closing_pos)
+                            Some(*closing_pos),
                         )),
                     None => return Err(PositionedError(
                         "']' closed but never opened".to_string(),
-                        Some(*closing_pos)
+                        Some(*closing_pos),
                     )),
                     _ => panic!("should not happen")
                 }
             }
             Token(txt, NoType, pos) => return Err(PositionedError(
                 format!("unrecognized token: {} at position {}", txt, pos),
-                Some(*pos)
+                Some(*pos),
             )),
             _ => {}
         }
@@ -143,12 +145,12 @@ fn check_token_seq(tokens: &Vec<Token>) -> Result<(), PositionedError> {
         Some(Token(_, OpeningBracket, pos)) =>
             Err(PositionedError(
                 format!("'[' at position {} never closed", pos),
-                Some(pos)
+                Some(pos),
             )),
         Some(Token(_, OpeningParenthesis, pos)) =>
             Err(PositionedError(
                 format!("'(' at position {} never closed", pos),
-                Some(pos)
+                Some(pos),
             )),
         Some(_) => panic!("should not happen"),
         None => Ok(())
@@ -167,7 +169,6 @@ fn merge_atom_into_seq(atoms_seq: &mut BTreeMap<Atom, u32>, atom: Atom, coef: u3
 ///
 /// Returns a map atom -> coef and a charge (in a pair), or a `PositionedError` if an error occurs
 fn parse_atoms_seq(atoms: &PeriodicTable, tokens: &Vec<Token>) -> Result<(BTreeMap<Atom, u32>, i32), PositionedError> {
-
     let mut rem_tokens = tokens.clone();
     let mut atoms_seq: BTreeMap<Atom, u32> = BTreeMap::new();
     let mut charge = 0;
@@ -188,7 +189,7 @@ fn parse_atoms_seq(atoms: &PeriodicTable, tokens: &Vec<Token>) -> Result<(BTreeM
                 } else {
                     return Err(PositionedError(
                         format!("unknown element: {} at position {}", alpha, pos),
-                        Some(pos)
+                        Some(pos),
                     ));
                 }
             }
@@ -226,14 +227,14 @@ fn parse_atoms_seq(atoms: &PeriodicTable, tokens: &Vec<Token>) -> Result<(BTreeM
                 } else {
                     return Err(PositionedError(
                         format!("unbalanced parentheses"),
-                        None
+                        None,
                     ));
                 }
             }
 
             // exponent token (for charge); expect '+' or '-' and possibly a number
             Token(_, Exponent, pos_exp) => {
-                match (rem_tokens.get(0), rem_tokens.get(1)){
+                match (rem_tokens.get(0), rem_tokens.get(1)) {
                     (
                         Some(Token(_, sign @ (Plus | Minus), _)),
                         Some(Token(num_str, Numeric, _))
@@ -255,7 +256,7 @@ fn parse_atoms_seq(atoms: &PeriodicTable, tokens: &Vec<Token>) -> Result<(BTreeM
                     }
                     _ => return Err(PositionedError(
                         format!("charge format error, expected '^<charge><+/->', e.g. '^3+', or '^<+/-><charge>', e.g. '^+3'"),
-                        Some(pos_exp)
+                        Some(pos_exp),
                     ))
                 }
             }
@@ -263,7 +264,7 @@ fn parse_atoms_seq(atoms: &PeriodicTable, tokens: &Vec<Token>) -> Result<(BTreeM
             // unexpected token: format error
             Token(_, _, pos) => return Err(PositionedError(
                 format!("unexpected: '{}' at position {}", next_tok, pos),
-                Some(pos)
+                Some(pos),
             ))
         }
     }
@@ -279,7 +280,7 @@ pub fn parse_molecule(atoms: &PeriodicTable, tokens: &Vec<Token>) -> Result<Mole
                 Molecule {
                     atoms: atoms_seq,
                     charge,
-                    string_repr: Some(str_repr)
+                    string_repr: Some(str_repr),
                 }
             })
         }
@@ -287,9 +288,9 @@ pub fn parse_molecule(atoms: &PeriodicTable, tokens: &Vec<Token>) -> Result<Mole
     }
 }
 
-fn parse_raw_equation_member(periodic_table: &PeriodicTable, tokens: &Vec<Token>) -> Result<Vec<Molecule>, PositionedError> {
-    let mut molecules: Vec<Molecule> = Vec::new();
-    let mut acc_molec_tokens: Vec<Token> = Vec::new();
+fn parse_equation_member(periodic_table: &PeriodicTable, tokens: &Vec<Token>) -> Result<Vec<(Molecule, Option<ChemQuantity>)>, PositionedError> {
+    let mut molecules: Vec<(Molecule, Option<ChemQuantity>)> = Vec::new();
+    let mut acc_tokens: Vec<Token> = Vec::new();
 
     // to distinguish between '+' between molecules and '+' for the charge
     let mut expect_charge_plus_or_minus = false;
@@ -299,44 +300,72 @@ fn parse_raw_equation_member(periodic_table: &PeriodicTable, tokens: &Vec<Token>
             Whitespace => {}
             Exponent => {
                 expect_charge_plus_or_minus = true;
-                acc_molec_tokens.push(tok.clone());
+                acc_tokens.push(tok.clone());
             }
             Plus => {
                 if expect_charge_plus_or_minus {
                     expect_charge_plus_or_minus = false;
-                    acc_molec_tokens.push(tok.clone());
+                    acc_tokens.push(tok.clone());
                 } else {
-                    let status_res = terminate_molecule(periodic_table, &mut molecules, &mut acc_molec_tokens);
+                    let status_res = terminate_molecule(periodic_table, &mut molecules, &mut acc_tokens);
                     if let Err(err) = status_res { return Err(err); }
                 }
-            },
+            }
             Minus => {
                 if expect_charge_plus_or_minus { expect_charge_plus_or_minus = false }
-                acc_molec_tokens.push(tok.clone());
-            },
+                acc_tokens.push(tok.clone());
+            }
             Arrow | NoType => panic!("should not happen"),
-            _ => acc_molec_tokens.push(tok.clone())
+            _ => acc_tokens.push(tok.clone())
         }
     }
-    let status_res = terminate_molecule(periodic_table, &mut molecules, &mut acc_molec_tokens);
+    let status_res = terminate_molecule(periodic_table, &mut molecules, &mut acc_tokens);
     if let Err(err) = status_res { Err(err) } else { Ok(molecules) }
 }
 
 /// Tries to parse the molecule described by the tokens in `acc_molec_tokens`, adds it to `molecules` and clears `acc_molec_tokens`
-fn terminate_molecule(periodic_table: &PeriodicTable, molecules: &mut Vec<Molecule>, acc_molec_tokens: &mut Vec<Token>) -> Result<(), PositionedError> {
-    let parsed = parse_molecule(periodic_table, &acc_molec_tokens);
-    acc_molec_tokens.clear();
+fn terminate_molecule(periodic_table: &PeriodicTable, molecules: &mut Vec<(Molecule, Option<ChemQuantity>)>, acc_tokens: &mut Vec<Token>) -> Result<(), PositionedError> {
+    let (chem_quant_opt, num_remove) =
+        match &acc_tokens[..] {
+            [
+            Token(digits_str, Numeric, _),
+            Token(_, Dot, _),
+            Token(decimal_str, Numeric, _),
+            Token(unit_str, Alphabetic, unit_tok_pos),
+            ..
+            ] => (Some(return_on_error!(chem_quantity_for(unit_str, unit_tok_pos, &format!("{}.{}", digits_str, decimal_str)))), 4),
+            [
+            Token(digits_str, Numeric, _),
+            Token(unit_str, Alphabetic, unit_tok_pos),
+            ..
+            ] => (Some(return_on_error!(chem_quantity_for(unit_str, unit_tok_pos, &digits_str))), 2),
+            _ => (None, 0)
+        };
+    for _ in 0..num_remove {
+        acc_tokens.remove(0);
+    }
+    let parsed = parse_molecule(periodic_table, &acc_tokens);
+    acc_tokens.clear();
     match parsed {
         Ok(molecule) => {
-            molecules.push(molecule);
+            molecules.push((molecule, chem_quant_opt));
             Ok(())
         }
         Err(err) => Err(err)
     }
 }
 
+fn chem_quantity_for(unit_str: &String, unit_tok_pos: &u64, value_str: &String) -> Result<ChemQuantity, PositionedError> {
+    let value: f64 = value_str.parse().unwrap();
+    let unit = match chem_unit_for(unit_str) {
+        Ok(u) => u,
+        Err(_) => return Err(PositionedError(format!("unknown unit: {}", unit_str), Some(*unit_tok_pos)))
+    };
+    Ok(ChemQuantity(value, unit))
+}
+
 /// `periodic_table` - all possible atoms in the molecule
-pub fn parse_raw_equation(periodic_table: &PeriodicTable, tokens: &Vec<Token>) -> Result<RawEquation, PositionedError> {
+pub fn parse_quantified_equation(periodic_table: &PeriodicTable, tokens: &Vec<Token>) -> Result<QuantifiedEquation, PositionedError> {
     let mut lhs_tokens: Vec<Token> = Vec::new();
     let mut rhs_tokens: Vec<Token> = Vec::new();
     let mut arrow: String = String::new();
@@ -346,14 +375,14 @@ pub fn parse_raw_equation(periodic_table: &PeriodicTable, tokens: &Vec<Token>) -
             Arrow => {
                 arrow = tok.0.clone();
                 member_idx += 1;
-            },
+            }
             _ => {
                 match member_idx {
                     0 => lhs_tokens.push(tok.clone()),
                     1 => rhs_tokens.push(tok.clone()),
                     _ => return Err(PositionedError(
                         format!("more than 2 members in equation"),
-                        Some(tok.2)
+                        Some(tok.2),
                     ))
                 }
             }
@@ -361,19 +390,28 @@ pub fn parse_raw_equation(periodic_table: &PeriodicTable, tokens: &Vec<Token>) -
     }
     if member_idx == 1 {
         let (lhs, rhs) = match (
-            parse_raw_equation_member(periodic_table, &lhs_tokens),
-            parse_raw_equation_member(periodic_table, &rhs_tokens)
+            parse_equation_member(periodic_table, &lhs_tokens),
+            parse_equation_member(periodic_table, &rhs_tokens)
         ) {
             (Ok(l), Ok(r)) => (l, r),
             (Err(err), _) => return Err(err),
             (_, Err(err)) => return Err(err)
         };
-        Ok(RawEquation { lhs, rhs, arrow })
+        Ok(QuantifiedEquation { lhs, rhs, arrow })
     } else {
         Err(PositionedError(
             format!("an equation must have exactly 2 members"),
-            None
+            None,
         ))
     }
 }
 
+pub fn parse_raw_equation(periodic_table: &PeriodicTable, tokens: &Vec<Token>) -> Result<RawEquation, PositionedError> {
+    let quant_eq = return_on_error!(parse_quantified_equation(periodic_table, tokens));
+    if quant_eq.is_raw_eq() {
+        Ok(quant_eq.to_raw_eq())
+    }
+    else {
+        Err(PositionedError(format!("expected chemical equation without coefficients or quantities"), None))
+    }
+}

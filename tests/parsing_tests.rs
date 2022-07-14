@@ -1,6 +1,9 @@
 #[path = "test_atoms.rs"]
 mod test_atoms;
 
+#[path = "test_molecules.rs"]
+mod test_molecules;
+
 #[cfg(test)]
 mod parsing_tests {
     use std::collections::btree_map::BTreeMap;
@@ -9,6 +12,7 @@ mod parsing_tests {
 
     use Stoichio_calc::parsing::{parse_molecule, parse_quantified_equation, parse_raw_equation, Token, tokenize, TokenType};
     use crate::{assert_near, test_atoms};
+    use crate::test_molecules::{c6h12o6, co2, h2o, o2};
 
     #[test]
     fn tokenize_valid_string_test() {
@@ -110,33 +114,9 @@ mod parsing_tests {
     #[test]
     fn parse_respiration_equation_test() {
         let eq_str = "C6H12O6 + O2 => H2O + CO2".to_string();
-        let c6h12o6 = Molecule {
-            atoms: BTreeMap::from([
-                (test_atoms::carbon(), 6),
-                (test_atoms::hydrogen(), 12),
-                (test_atoms::oxygen(), 6)
-            ]),
-            charge: 0,
-            string_repr: Some("C6H12O6".to_string()),
-        };
-        let o2 = Molecule {
-            atoms: BTreeMap::from([(test_atoms::oxygen(), 2)]),
-            charge: 0,
-            string_repr: Some("O2".to_string()),
-        };
-        let h2o = Molecule {
-            atoms: BTreeMap::from([(test_atoms::hydrogen(), 2), (test_atoms::oxygen(), 1)]),
-            charge: 0,
-            string_repr: Some("H2O".to_string()),
-        };
-        let co2 = Molecule {
-            atoms: BTreeMap::from([(test_atoms::carbon(), 1), (test_atoms::oxygen(), 2)]),
-            charge: 0,
-            string_repr: Some("CO2".to_string()),
-        };
         let expected = RawEquation {
-            lhs: Vec::from([c6h12o6, o2]),
-            rhs: Vec::from([h2o, co2]),
+            lhs: Vec::from([c6h12o6(), o2()]),
+            rhs: Vec::from([h2o(), co2()]),
             arrow: "=>".to_string(),
         };
         let actual_res =
@@ -189,38 +169,14 @@ mod parsing_tests {
     #[test]
     fn parse_quantified_equation_test() {
         let eq_str = "2.3 mol C6H12O6 + O2 => H2O + 1 g CO2".to_string();
-        let c6h12o6 = Molecule {
-            atoms: BTreeMap::from([
-                (test_atoms::carbon(), 6),
-                (test_atoms::hydrogen(), 12),
-                (test_atoms::oxygen(), 6)
-            ]),
-            charge: 0,
-            string_repr: Some("C6H12O6".to_string()),
-        };
-        let o2 = Molecule {
-            atoms: BTreeMap::from([(test_atoms::oxygen(), 2)]),
-            charge: 0,
-            string_repr: Some("O2".to_string()),
-        };
-        let h2o = Molecule {
-            atoms: BTreeMap::from([(test_atoms::hydrogen(), 2), (test_atoms::oxygen(), 1)]),
-            charge: 0,
-            string_repr: Some("H2O".to_string()),
-        };
-        let co2 = Molecule {
-            atoms: BTreeMap::from([(test_atoms::carbon(), 1), (test_atoms::oxygen(), 2)]),
-            charge: 0,
-            string_repr: Some("CO2".to_string()),
-        };
         let expected_output = QuantifiedEquation {
             lhs: Vec::from([
-                (c6h12o6, Some(ChemQuantity(2.3, Mol))),
-                (o2, None)
+                (c6h12o6(), Some(ChemQuantity(2.3, Mol))),
+                (o2(), None)
             ]),
             rhs: Vec::from([
-                (h2o, None),
-                (co2, Some(ChemQuantity(1.0, Gram)))
+                (h2o(), None),
+                (co2(), Some(ChemQuantity(1.0, Gram)))
             ]),
             arrow: "=>".to_string(),
         };

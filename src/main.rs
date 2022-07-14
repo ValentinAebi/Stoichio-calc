@@ -4,9 +4,10 @@ use std::env::args;
 use std::io::{BufRead, Write};
 use std::process::exit;
 
-use Stoichio_calc::chemistry::{balance, PeriodicTable};
+use Stoichio_calc::chemistry::{balance, compute_lhs_coefs, PeriodicTable};
 use Stoichio_calc::data_loading::load_periodic_table;
-use Stoichio_calc::parsing::{parse_molecule, parse_raw_equation, PositionedError, tokenize};
+use Stoichio_calc::parsing::{parse_molecule, parse_quantified_equation, parse_raw_equation, PositionedError, tokenize};
+use Stoichio_calc::return_on_error;
 
 type ArgsCommand = fn(&str, &Context) -> Result<(), PositionedError>;
 type NoArgsCommand = fn(&Context) -> Result<(), PositionedError>;
@@ -28,7 +29,9 @@ fn main() {
             ("mass", (&(compute_mass_cmd as ArgsCommand),
                       "mass <molecule> - display the atomic mass of the molecule in uma")),
             ("balance", (&(balance_equation_cmd as ArgsCommand),
-                         "balance <equation> - balances the equation, e.g. 'balance H2 + O2 => H2O'"))
+                         "balance <equation> - balances the equation, e.g. 'balance H2 + O2 => H2O'")),
+            ("compute", (&(compute_products_cmd as ArgsCommand),
+            "compute <equation> - computes the amounts of reactives, e.g. 'compute 1 mol H2 + 0.5 g O2 => H2O'"))
         ]),
         no_args_cmds: BTreeMap::from([
             ("exit", (&(exit_cmd as NoArgsCommand), "exit - exit the program")),
@@ -145,6 +148,16 @@ fn balance_equation_cmd(args: &str, ctx: &Context) -> Result<(), PositionedError
         }
         Err(pos_err) => Err(pos_err)
     }
+}
+
+fn compute_products_cmd(args: &str, ctx: &Context) -> Result<(), PositionedError> {
+    let (eq, limiting_reactant) = return_on_error!(compute_lhs_coefs(
+        &return_on_error!(parse_quantified_equation(&ctx.periodic_table, &tokenize(&args.to_string())))
+    ));
+    println!("{}", eq);
+    println!("{}", eq.quantities_to_grams());
+    println!("limiting reactant: {}", limiting_reactant);
+    Ok(())
 }
 
 fn exit_cmd(_ctx: &Context) -> Result<(), PositionedError> {

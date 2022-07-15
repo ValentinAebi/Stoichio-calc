@@ -27,7 +27,7 @@ fn main() {
         periodic_table: load_periodic_table(periodic_table_file_content),
         args_cmds: BTreeMap::from([
             ("mass", (&(compute_mass_cmd as ArgsCommand),
-                      "mass <molecule> - display the atomic mass of the molecule in uma")),
+                      "mass <molecule> - display the atomic mass of the molecule in atomic mass unit")),
             ("balance", (&(balance_equation_cmd as ArgsCommand),
                          "balance <equation> - balance the equation, e.g. 'balance H2 + O2 => H2O'")),
             ("compute", (&(compute_products_cmd as ArgsCommand),
@@ -130,7 +130,7 @@ fn display_help(ctx: &Context) {
 fn compute_mass_cmd(args: &str, ctx: &Context) -> Result<(), PositionedError> {
     match parse_molecule(&ctx.periodic_table, &tokenize(&args.to_string())) {
         Ok(molecule) => {
-            Ok(println!("molecular mass: {} uma", molecule.mass_uma()))
+            Ok(println!("molecular mass: {} u", molecule.mass_amu()))
         }
         Err(msg) => Err(msg)
     }

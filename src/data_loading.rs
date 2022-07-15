@@ -12,7 +12,7 @@ pub fn load_peridic_table_as_vec(file_content: &str) -> Vec<Atom> {
                 Atom {
                     name: name.to_string(),
                     code: code.to_string(),
-                    atomic_mass_milli_uma: (1000.0 * atomic_mass) as u64
+                    atomic_mass_milli_amu: (1000.0 * atomic_mass) as u64
                 }
             }
             _ => panic!("could not read recource file line")

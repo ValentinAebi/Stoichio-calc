@@ -14,12 +14,12 @@ use crate::return_on_error;
 pub struct Atom {
     pub code: String,
     pub name: String,
-    pub atomic_mass_milli_uma: u64,
+    pub atomic_mass_milli_amu: u64,
 }
 
 impl Atom {
-    pub fn atomic_mass_uma(&self) -> f64 {
-        (self.atomic_mass_milli_uma as f64) / 1000.0
+    pub fn atomic_mass_amu(&self) -> f64 {
+        (self.atomic_mass_milli_amu as f64) / 1000.0
     }
 }
 
@@ -31,16 +31,16 @@ pub struct Molecule {
 }
 
 impl Molecule {
-    pub fn mass_milli_uma(&self) -> u64 {
+    pub fn mass_milli_amu(&self) -> u64 {
         let mut sum: u64 = 0;
         for (atom, &coef) in &self.atoms {
-            sum += (coef as u64) * atom.atomic_mass_milli_uma;
+            sum += (coef as u64) * atom.atomic_mass_milli_amu;
         }
         sum
     }
 
-    pub fn mass_uma(&self) -> f64 {
-        (self.mass_milli_uma() as f64) / 1000.0
+    pub fn mass_amu(&self) -> f64 {
+        (self.mass_milli_amu() as f64) / 1000.0
     }
 
     fn default_fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -241,8 +241,8 @@ impl Display for QuantifiedEquation {
 fn to_mol(molec: &Molecule, qty: &ChemQuantity) -> ChemQuantity {
     let ChemQuantity(value, unit) = qty;
     let factor = match unit {
-        Gram => molec.mass_uma(),
-        Milligram => molec.mass_milli_uma() as f64,
+        Gram => molec.mass_amu(),
+        Milligram => molec.mass_milli_amu() as f64,
         Mol => 1.0
     };
     ChemQuantity(value / factor, Mol)
@@ -253,7 +253,7 @@ fn to_gram(molec: &Molecule, qty: &ChemQuantity) -> ChemQuantity {
     let factor = match unit {
         Gram => 1.0,
         Milligram => 0.001,
-        Mol => molec.mass_uma()
+        Mol => molec.mass_amu()
     };
     ChemQuantity(value * factor, Gram)
 }

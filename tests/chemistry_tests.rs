@@ -25,7 +25,7 @@ mod chemistry_tests {
             charge: 0,
             string_repr: None
         };
-        assert_near(180.16, molecule.mass_uma(), 0.05)
+        assert_near(180.16, molecule.mass_amu(), 0.05)
     }
 
     #[test]

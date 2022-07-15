@@ -10,7 +10,7 @@ Command-line program to perform simple stoichiometric computations
 
 balance <equation> - balance the equation, e.g. 'balance H2 + O2 => H2O'
 compute <equation> - compute the amounts of products, e.g. 'compute 1 mol H2 + 0.5 g O2 => H2O'
-mass <molecule> - display the atomic mass of the molecule in uma
+mass <molecule> - display the atomic mass of the molecule in atomic mass unit
 exit - exit the program
 help - display the current explanations
 

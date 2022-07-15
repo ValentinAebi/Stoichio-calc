@@ -6,7 +6,7 @@ pub fn hydrogen() -> Atom {
     Atom {
         name: "hydrogen".to_string(),
         code: "H".to_string(),
-        atomic_mass_milli_uma: 1_007,
+        atomic_mass_milli_amu: 1_007,
     }
 }
 
@@ -15,7 +15,7 @@ pub fn carbon() -> Atom {
     Atom {
         name: "carbon".to_string(),
         code: "C".to_string(),
-        atomic_mass_milli_uma: 12_011,
+        atomic_mass_milli_amu: 12_011,
     }
 }
 
@@ -24,7 +24,7 @@ pub fn oxygen() -> Atom {
     Atom {
         name: "oxygen".to_string(),
         code: "O".to_string(),
-        atomic_mass_milli_uma: 15_999,
+        atomic_mass_milli_amu: 15_999,
     }
 }
 
@@ -33,7 +33,7 @@ pub fn nitrogen() -> Atom {
     Atom {
         name: "nitrogen".to_string(),
         code: "N".to_string(),
-        atomic_mass_milli_uma: 14_007,
+        atomic_mass_milli_amu: 14_007,
     }
 }
 
@@ -42,7 +42,7 @@ pub fn sodium() -> Atom {
     Atom {
         name: "sodium".to_string(),
         code: "Na".to_string(),
-        atomic_mass_milli_uma: 22_990,
+        atomic_mass_milli_amu: 22_990,
     }
 }
 
@@ -51,7 +51,7 @@ pub fn selenium() -> Atom {
     Atom {
         name: "selenium".to_string(),
         code: "Se".to_string(),
-        atomic_mass_milli_uma: 78_960,
+        atomic_mass_milli_amu: 78_960,
     }
 }
 
@@ -60,7 +60,7 @@ pub fn rubidium() -> Atom {
     Atom {
         name: "rubidium".to_string(),
         code: "Rb".to_string(),
-        atomic_mass_milli_uma: 85_468
+        atomic_mass_milli_amu: 85_468
     }
 }
 
@@ -69,7 +69,7 @@ pub fn plutonium() -> Atom {
     Atom {
         name: "plutonium".to_string(),
         code: "Pu".to_string(),
-        atomic_mass_milli_uma: 244_000
+        atomic_mass_milli_amu: 244_000
     }
 }
 
@@ -78,7 +78,7 @@ pub fn iron() -> Atom {
     Atom {
         name: "iron".to_string(),
         code: "Fe".to_string(),
-        atomic_mass_milli_uma: 55_845
+        atomic_mass_milli_amu: 55_845
     }
 }
 
@@ -87,7 +87,7 @@ pub fn copper() -> Atom {
     Atom {
         name: "Copper".to_string(),
         code: "Cu".to_string(),
-        atomic_mass_milli_uma: 63_546
+        atomic_mass_milli_amu: 63_546
     }
 }
 

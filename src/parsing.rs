@@ -315,7 +315,7 @@ fn parse_equation_member(periodic_table: &PeriodicTable, tokens: &Vec<Token>) ->
                 if expect_charge_plus_or_minus { expect_charge_plus_or_minus = false }
                 acc_tokens.push(tok.clone());
             }
-            Arrow | NoType => panic!("should not happen"),
+            Arrow | NoType => return Err(PositionedError(format!("unexpected: {}", tok.0), Some(tok.2))),
             _ => acc_tokens.push(tok.clone())
         }
     }

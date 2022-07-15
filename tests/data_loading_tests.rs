@@ -12,7 +12,7 @@ mod data_loading_tests {
         assert_eq!(118, loaded.len());
         assert_eq!("Neon", loaded.get(9).unwrap().name);
         assert_eq!("Se", loaded.get(33).unwrap().code);
-        assert_eq!(174_967, loaded.get(70).unwrap().atomic_mass_milli_uma);
+        assert_eq!(174_967, loaded.get(70).unwrap().atomic_mass_milli_amu);
     }
 
 }

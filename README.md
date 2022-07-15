@@ -25,5 +25,15 @@ Al2(CO3)3 + 2 H3PO4 => 2 AlPO4 + 3 CO2 + 3 H2O
 >
 ```
 
+#### Molecule format
+
+`(<atom>[<coef>])* [^<charge>]`
+
+$CO_2$ : `CO2`
+
+$Cu^{2+}$ : `Cu^2+`
+
+$Al_2 (CO_3)_3$ : `Al2(CO3)3`
+
 #### Periodic table data source
 GoodmanSciences, Github, https://gist.github.com/GoodmanSciences/c2dd862cd38f21b0ad36b8f96b4bf1ee

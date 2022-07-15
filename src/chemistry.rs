@@ -1,9 +1,8 @@
 use std::collections::btree_map::BTreeMap;
 use std::collections::HashSet;
 use std::fmt;
-use std::fmt::{Display, format, Formatter};
+use std::fmt::{Display, Formatter};
 use std::hash::Hash;
-use std::ptr::null;
 use crate::arith::lcm_vec;
 use crate::chemistry::ChemUnit::{Gram, Milligram, Mol};
 use crate::lin_alg::Matrix;

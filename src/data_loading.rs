@@ -1,4 +1,3 @@
-use std::fs;
 use crate::chemistry::{Atom, PeriodicTable};
 
 const CSV_SPLITTER: &str = ",";

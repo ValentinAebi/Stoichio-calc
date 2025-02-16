@@ -11,7 +11,7 @@ impl Matrix {
     pub fn of_arr(arr: &[&[i32]]) -> Self {
         let mut coefs: Vec<Vec<i32>> = Vec::new();
         for row in arr {
-            let row_vec: Vec<i32> = Vec::from(row.clone());
+            let row_vec: Vec<i32> = row.to_vec();
             coefs.push(row_vec);
         }
         Matrix::of_row_major(&coefs)
